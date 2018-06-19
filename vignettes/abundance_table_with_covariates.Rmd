@@ -1,0 +1,101 @@
+---
+title: "Estimation of species or sites effects and interactions in abundance tables"
+author: "Geneviève Robin"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this document we demonstrate how the package mimi can be used to analyse count data with covariates. 
+
+## Aravo data
+
+```{r load-aravo}
+library(mimi)
+library(ade4)
+data(aravo)
+```
+
+We use an example from ecology with the Aravo data from the ade4 R package. It consists of an count table counting the abundance of 82 plant species across 75 environments in the French Alps. 
+
+```{r aravo-counts}
+aravo$spe[1:7, 1:5]
+```
+
+Covariates about environments (slope, snow, etc.) and species (height, mass, etc.) are also available.
+
+```{r aravo-covariates}
+aravo$env[1:7, 1:5]
+aravo$traits[1:7, 1:5]
+```
+
+
+
+## Model
+
+We use the methods in mimi with the following purpose: estimate the effects of the covariates on the counts, as well as additional interactions. Let $Y$ be the $n\times p$ count table, where $n$ is the number of environments and $p$ the number of species. Let $X_R$ be the $n\times q_R$ matrix containing the $q_R$ environments covariates, and $X_C$ be the $p\times q_C$ matrix containing the $q_C$ species covariates. 
+
+We use the following extension of the log-bilinear model:
+$$Y_{ij}\sim \mathcal{P}(\mu_{ij}), \quad \log(\mu_{ij}) = \mu + \langle x_{ij}|\alpha\rangle + \theta_{ij}, $$
+where $x_{ij}$ is the vector containing the covariates for environment $i$ and species $j$: $x_{ij} = (X_R(i), X_C(j))$. Thus, $\mu$ is an offset, $\alpha$ is the vector of covariates effects, and $\theta_{ij}$ is an interaction term. \\
+
+Of course, the model is overparametrized. We make the following assumptions: $\alpha$ is *sparse*, i.e. not all covariates influence the counts, and $\theta = (\theta_{ij})$ is low-rank, i.e. there are a few groups of similar species which can be summarized by a few latent variables. We estimate $\mu$, $\alpha$ and $\theta$ by minimizing the following penalized negative log-likelihood:
+
+$$(\hat \mu, \hat\alpha, \hat\theta)\in \operatorname{argmin}\sum_{i=1}^n\sum_{j=1}^p (-Y_{ij}(\mu + \langle x_{ij}|\alpha\rangle + \theta_{ij}) + \exp(\mu + \langle x_{ij}|\alpha\rangle + \theta_{ij})) + \lambda_1\|\theta\|_{\star} + \lambda_2\|\alpha\|_1.$$
+Here, the $\ell_1$ norm $\|\alpha\|_1$ (sum of absolute values of coefficients) and the nuclear norm $\|\theta\|_{\star}$ (sum of singular values) are convex relaxations of the sparsity and rank constraints respectively. The regularization parameters $\lambda_1$ and $\lambda_2$ act as trade-offs between fitting the data and privileging simpler models. They can be tuned with cross-validation for instance.
+
+## Estimation of main effects and interactions with mimi
+
+First of all we need to concatenate the matrices $X_R$ and $X_C$ to obtain a covariate vector $x_{ij}$ for every entry.
+
+```{r create-covariate-matrix}
+# Code the categorical variables using dummy variables
+aravo$env$Form1 <- 1*(aravo$env$Form==1)
+aravo$env$Form2 <- 1*(aravo$env$Form==2)
+aravo$env$Form3 <- 1*(aravo$env$Form==3)
+aravo$env <- aravo$env[,!(names(aravo$env)%in%"Form")]
+aravo$env$ZoogDno <- 1*(aravo$env$ZoogD=="no")
+aravo$env$ZoogDyes <- 1*(aravo$env$ZoogD=="yes")
+aravo$env <- aravo$env[,!(names(aravo$env)%in%"ZoogD")]
+X <- covmat(aravo$env, aravo$traits)
+# scale and center the covariates
+X <- scale(X)
+```
+
+Now we can proceed to the estimation
+
+```{r mimi-estimation}
+vt <- rep("poisson", ncol(aravo$spe)) # indicate the type of the columns of Y
+res <- mimi(aravo$spe, model = "covariates", x = X, var.type = vt,
+            lambda1 = 5, lambda2 = 1e-2)
+
+df.alpha <- data.frame(var = c(colnames(aravo$env),
+                               colnames(aravo$traits)),
+                       alpha = res$list.alpha[[20]])
+```
+
+For a given value of $\lambda_1$ and $\lambda_2$ we obtain an estimate of the covariate effects and of the interaction. Here, the estimated interaction matrix is of rank $1$.
+```{r results}
+df.alpha
+sum(svd(res$list.theta[[20]])$d>1e-6)
+
+```
+
+The parameters $\lambda_1$ and $\lambda_2$ can also be estimated by cross validation. We comment the code below because it is quite long to run.
+```{r cv}
+#res.cv <- cv.mimi(y = aravo$spe, model = "covariates", x = X)
+```
+
+
+
+

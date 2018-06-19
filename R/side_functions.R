@@ -1,0 +1,328 @@
+#' wght
+#'
+#' @param y real number: observation
+#' @param param real number: current value of parameter
+#' @param var.type type of variable y (gaussian, binomial, poisson)
+#' @return weight of the quadratic approximation
+#' @export
+#' @examples
+#' y <- rnorm(1)
+#' param <- 0.5
+#' var.type = "gaussian"
+#' wght <- wght(y, param, var.type)
+wght <- function(y, param, var.type){
+  if(var.type == "gaussian"){
+    ytilde <- y
+    vtilde2 <- 1
+  } else if(var.type == "binomial"){
+    vtilde2 <- 1 / 4
+    ytilde <- 4 * y - 4 * (exp(param) / (1 + exp(param))) + param
+  } else if (var.type == "poisson"){
+    vtilde2 <- exp(param)
+    ytilde <- (y - exp(param))/ vtilde2  + param
+  } else {
+    stop("Incorrect type of variable. Should be 'gaussian', 'binomial', or 'poisson'.")
+  }
+  return(list(ytilde = ytilde, vtilde2 = vtilde2))
+}
+
+#' quad_approx
+#'
+#' @param y column of observation (length n)
+#' @param param column of parameters (length n)
+#' @param var.type type of the variables in y (length 1)
+#' @return vector of weights for the quadratic approximation
+#' @export
+#' @examples
+#' y <- rnorm(6)
+#' param <- rnorm(6)
+#' var.type <- "gaussian"
+#' wghts <- quad_approx(y, param, var.type)
+quad_approx <- function(y, param, var.type){
+  n <- length(y)
+  w <- rep(0, n)
+  w <- lapply(1:n, function(i) wght(y[i], param[i], var.type))
+  ytilde <- sapply(1:n, function(i) w[[i]]$ytilde)
+  vtilde2 <- sapply(1:n, function(i) w[[i]]$vtilde2)
+  return(list(ytilde = ytilde, vtilde2 = vtilde2))
+}
+
+#' Frob
+#' compute stopping criterion of weighted softImpute
+#' @param Uold nxq matrix of left singular vectors
+#' @param Dsqold vector singular values (q)
+#' @param Vold pxq matrix of right singular vectors
+#' @param U nxq matrix of left singular vectors
+#' @param Dsq vector of singular values (q)
+#' @param V pxq matrix of right singular vectors
+#' @return value of stopping criterion
+#' @export
+#' @examples
+#' U <- matrix(rnorm(5*2), nrow = 5)
+#' V <- matrix(rnorm(3*2), nrow = 3)
+#' Dsq <- abs(rnorm(2))
+#' Uold <- matrix(rnorm(5*2), nrow = 5)
+#' Vold <- matrix(rnorm(3*2), nrow = 3)
+#' Dsqold <- abs(rnorm(2))
+#' crit <- Frob(Uold,Dsqold,Vold,U,Dsq,V)
+Frob <- function(Uold,Dsqold,Vold,U,Dsq,V){
+  denom=sum(Dsqold^2)
+  utu=Dsq* (t(U)%*%Uold)
+  vtv=Dsqold* (t(Vold)%*%V)
+  uvprod= sum(diag(utu%*%vtv))
+  num=denom+sum(Dsq^2) -2*uvprod
+  return(num/max(denom,1e-9))
+}
+
+#' log_factorial
+#'
+#' @param x matrix of integers
+#' @return the log of the factorial of every entry in x
+#' @export
+#' @examples
+#' x <- matrix(seq(1, 10), nrow = 5)
+#' res <- log_factorial(x)
+log_factorial <- function(x){
+  m <- apply(x, c(1,2), function(t) if(is.na(t)){
+    NA
+  } else if(t==0){
+    1
+  } else  sum(log(1:t)))
+  return(m)
+}
+
+#' wlra
+#'
+#' @param x nxp matrix to be approximates
+#' @param w nxp matrix of weights (optional)
+#' @param lambda regularization parameter
+#' @param x0 nxp matrix of initial values
+#' @param thresh convergence criterion
+#' @param maxit maximum number of iterations
+#' @param rank.max maximum number of sv to compute
+#' @return a list containing the following elements
+#' \item{d}{the vector of singular values}
+#' \item{u}{the left singular vectors}
+#' \item{v}{the right singular vectors}
+#' \item{convergence}{boolean indicating if algorithm converged before maxit iterations}
+#' \item{iter}{number of iterations performed}
+#' @export
+#' @examples
+#' x <- matrix(rnorm(10*6), nrow = 10)
+#' x[sample(60, 10)] <- NA
+#' res <- wlra(x)
+wlra <- function(x, w = NULL, lambda = 0, x0 = NULL,
+                 thresh = 1e-6, maxit = 1e3, rank.max = NULL){
+  d <- dim(x)
+  n <- d[1]
+  p <- d[2]
+  if(is.null(w)) w = matrix(rep(1, n*p), nrow = n)
+  if(is.null(rank.max)) rank.max <- min(n, p) - 1
+  if(is.null(x0)) x0 <- matrix(rep(0, n*p), nrow = n)
+  xnas <- is.na(x)
+  omega <- 1*(!xnas)
+  nz=n*p-sum(xnas)
+  xfill <- x
+  xfill[xnas] <- 0
+  xfill <- omega*w*xfill + (1 - omega*w)*x0
+  iter <- 0
+  error <- 100
+  svd.xfill=svd(xfill)
+  while((error > thresh) && (iter < maxit)){
+    iter <- iter + 1
+    svd.old=svd.xfill
+    d=svd.xfill$d
+    d=pmax(d-lambda,0)
+    J <- min(rank.max, length(d))
+    xhat <- svd.xfill$u[, seq(J)] %*% (d[seq(J)] * t(svd.xfill$v[,seq(J)]))
+    xfill <- omega*w*xfill + (1 - omega*w)*xhat
+    svd.xfill=svd(xfill)
+    error=Frob(svd.old$u[, seq(J)],d[seq(J)],svd.old$v[, seq(J)],
+               svd.xfill$u[, seq(J)],pmax(svd.xfill$d-lambda,0)[seq(J)],svd.xfill$v[, seq(J)])
+  }
+  if(error < thresh) cvg = T else cvg = F
+  d <- svd.xfill$d[seq(J)]
+  d=pmax(svd.xfill$d[seq(J)]-lambda,0)
+  J=min(sum(d>0)+1,J)
+  svd.xfill=list(u=svd.xfill$u[, seq(J)], d=d[seq(J)], v=svd.xfill$v[,seq(J)])
+  if(iter==maxit)warning(paste("Convergence not achieved by",maxit,"iterations"))
+  return(list(d = svd.xfill$d, u = svd.xfill$u, v = svd.xfill$v, cvg = cvg, iter = iter))
+}
+
+#' bls.cov
+#' Performs backtracking line search along a pre-specified search direction
+#' @param y0 nxp observations matrix
+#' @param x (np)xN matrix of covariates
+#' @param mu real number, direction of update for offset
+#' @param alpha  direction of update for vector of regression parameters of length N
+#' @param theta nxp matrix direction of update for matrix of interactions
+#' @param mu.tmp real number, current offset
+#' @param alpha.tmp length N vector, current regression parameters
+#' @param theta.tmp nxp matrix, current matrix of interactions
+#' @param b positive number in (0,1) factor by which the step size is reduced
+#' @param lambda1 positive number, regularization parameter for nuclear norm penalty
+#' @param lambda2 positive number, regularization parameter for l1 norm penalty
+#' @param var.type vector of length p indicating column types for y (gaussian, binomial, poisson)
+#' @param thresh positive number, convergence criterion
+#' @export
+#' @import stats
+#' @return A list with the following elements
+#' \item{mu}{the offset}
+#' \item{alpha}{a (nb groups) x (nb variables) matrix containing the group effects}
+#' \item{theta a}{(nb individuals) x (nb variables) matrix containing the individual effects}
+#' \item{objective}{a vector containing the value of the objective function at every iteration}
+#' \item{t}{the step size}
+#' @examples
+#' y <- matrix(rnorm(6 * 10), nrow = 6)
+#' x <- matrix(rnorm(60*2), nrow = 60)
+#' mu <- 0
+#' alpha <- rnorm(2)
+#' theta <- matrix(rnorm(6 * 10), nrow = 6)
+#' mut <- 0.1
+#' alphat <- rnorm(2)
+#' thetat <- matrix(rnorm(6 * 10), nrow = 6)
+#' v <- rep("gaussian", 10)
+#' t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v)
+bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
+                b = 0.5, lambda1, lambda2, var.type, thresh = 1e-3){
+  d <- dim(y0)
+  n <- d[1]
+  p <- d[2]
+  q <- ncol(x)
+  omega <- !is.na(y0)
+  alpha.mat <- matrix(matrix(as.numeric(x), nrow = n*p)%*%alpha, nrow = n)
+  alpha.tmp.mat <- matrix(matrix(as.numeric(x), nrow = n*p)%*%alpha.tmp, nrow = n)
+  param <- mu + alpha.mat + theta
+  param.tmp <- mu.tmp + alpha.tmp.mat + theta.tmp
+  gaus.tmp <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
+                            na.rm = T)
+  pois.tmp <- sum(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
+                    exp(param.tmp[, var.type == "poisson"]), na.rm = T)
+  binom.tmp <- sum(- (y0[, var.type == "binomial"] * param.tmp[, var.type == "binomial"]) +
+                     log(1 + exp(param.tmp[, var.type == "binomial"])), na.rm = T)
+  d.tmp <- svd(theta.tmp)$d
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+                        na.rm = T)
+  pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
+                exp(param[, var.type == "poisson"]), na.rm = T)
+  binom <- sum(- (y0[, var.type == "binomial"] * param[, var.type == "binomial"]) +
+                 log(1 + exp(param[, var.type == "binomial"])), na.rm = T)
+
+  t <- 1
+  mu2 <- (1-t)*mu.tmp + t*mu
+  alpha2 <- (1-t)*alpha.tmp + t*alpha
+  theta2 <- (1-t)*theta.tmp + t*theta
+  param2 <- (1-t)*param.tmp + t*param
+  diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha))))
+  number <- gaus.tmp + pois.tmp + binom.tmp + lambda1 * sum(d.tmp) + sum(lambda2 * (t(abs(alpha.tmp))))
+  while(diff < -abs(number)*thresh){
+    t <- b*t
+    mu2 <- (1-t)*mu.tmp + t*mu
+    alpha2 <- (1-t)*alpha.tmp + t*alpha
+    theta2 <- (1-t)*theta.tmp + t*theta
+    param2 <- (1-t)*param.tmp + t*param
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+                          na.rm = T)
+    pois <- sum(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+                  exp(param2[, var.type == "poisson"]), na.rm = T)
+    binom <- sum(- (y0[, var.type == "binomial"] * param2[, var.type == "binomial"]) +
+                   log(1 + exp(param2[, var.type == "binomial"])), na.rm = T)
+    d <- svd(theta2)$d
+    diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha2))))
+  }
+  obj <- pois + gaus + binom + lambda1*d + sum(lambda2 * t(abs(alpha2)))
+  return(list(mu = mu2, alpha = alpha2, theta = theta2, objective = obj, t=t))
+
+}
+
+#' bls.multi
+#' Performs backtracking line search along a pre-specified search direction
+#' @param y0 nxp matrix of observations
+#' @param groups length n indicator factor of group memberships
+#' @param mu real number new offset
+#' @param alpha vector of length p*N(nb of groups) new regression parameter
+#' @param theta nxp matrix new interaction matrix
+#' @param mu.tmp real number current offset
+#' @param alpha.tmp vector of length p*N(nb of groups) current regression parameter
+#' @param theta.tmp nxp matrix current interaction matrix
+#' @param b number in (0,1) factor by which step size is reduced
+#' @param lambda1 positive number regularization parameter for nuclear norm penalty
+#' @param lambda2 positive number regularization parameter for l1 norm penalty
+#' @param var.type vector of length p indicating variable types (gaussian, binomial, poisson)
+#' @param thresh positive number congervence criterion
+#'
+#' @import stats
+#' @export
+#' @return A list with the following elements
+#' \item{mu}{the offset}
+#' \item{alpha}{a (nb groups) x (nb variables) matrix containing the group effects}
+#' \item{theta a}{(nb individuals) x (nb variables) matrix containing the individual effects}
+#' \item{objective}{a vector containing the value of the objective function at every iteration}
+#' \item{t}{the step size}
+#' @examples
+#' y0 <- matrix(rnorm(6 * 10), nrow = 6)
+#' m <- 0
+#' a <- matrix(rnorm(30), nrow = 3)
+#' t <- matrix(rnorm(6 * 10), nrow = 6)
+#' mt <- 0.1
+#' at <- matrix(rnorm(30), nrow = 3)
+#' tt <- matrix(rnorm(6 * 10), nrow = 6)
+#' v <- rep("gaussian", 10)
+#' gps <- as.factor(c(1,1,2,2,3,3))
+#' bls <- bls.multi(y0, gps, m, a, t, mt, at, tt, 1, 1, v)
+bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
+                      lambda1, lambda2, var.type, thresh = 1e-3, b = 0.5){
+  d <- dim(y0)
+  n <- d[1]
+  p <- d[2]
+  groups <- as.factor(groups)
+  N <- nlevels(groups)
+  omega <- !is.na(y0)
+  ncenters <- aggregate(rep(1, n), by = list(groups), sum)[,2]
+
+  alpha.rep <- matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
+  alpha.tmp.rep <- matrix(rep(as.matrix(alpha.tmp), rep(ncenters, p)), nrow = n)
+  param <- mu + alpha.rep + theta
+  param.tmp <- mu.tmp + alpha.tmp.rep + theta.tmp
+  gaus.tmp <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
+                            na.rm = T)
+  pois.tmp <- sum(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
+                    exp(param.tmp[, var.type == "poisson"]), na.rm = T)
+  binom.tmp <- sum(- (y0[, var.type == "binomial"] * param.tmp[, var.type == "binomial"]) +
+                     log(1 + exp(param.tmp[, var.type == "binomial"])), na.rm = T)
+  d.tmp <- svd(theta.tmp)$d
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+                        na.rm = T)
+  pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
+                exp(param[, var.type == "poisson"]), na.rm = T)
+  binom <- sum(- (y0[, var.type == "binomial"] * param[, var.type == "binomial"]) +
+                 log(1 + exp(param[, var.type == "binomial"])), na.rm = T)
+
+  t <- 1
+  mu2 <- (1-t)*mu.tmp + t*mu
+  alpha2 <- (1-t)*alpha.tmp + t*alpha
+  theta2 <- (1-t)*theta.tmp + t*theta
+  param2 <- (1-t)*param.tmp + t*param
+  diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha))))
+  number <- gaus.tmp + pois.tmp + binom.tmp + lambda1 * sum(d.tmp) + sum(lambda2 * (t(abs(alpha.tmp))))
+  while(diff < -abs(number)*thresh){
+    t <- b*t
+    mu2 <- (1-t)*mu.tmp + t*mu
+    alpha2 <- (1-t)*alpha.tmp + t*alpha
+    theta2 <- (1-t)*theta.tmp + t*theta
+    param2 <- (1-t)*param.tmp + t*param
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+                          na.rm = T)
+    pois <- sum(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+                  exp(param2[, var.type == "poisson"]), na.rm = T)
+    binom <- sum(- (y0[, var.type == "binomial"] * param2[, var.type == "binomial"]) +
+                   log(1 + exp(param2[, var.type == "binomial"])), na.rm = T)
+    d <- svd(theta2)$d
+
+    diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha2))))
+  }
+  obj <- pois + gaus + binom + lambda1*d + sum(lambda2 * t(abs(alpha2)))
+  return(list(mu = mu2, alpha = alpha2, theta = theta2, objective = obj, t=t))
+
+}
+
