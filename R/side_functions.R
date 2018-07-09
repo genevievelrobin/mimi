@@ -133,7 +133,7 @@ log_factorial <- function(x){
 #' x <- matrix(rnorm(10*6), nrow = 10)
 #' x[sample(60, 10)] <- NA
 #' res <- wlra(x)
-wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-6, maxit = 1e3, rank.max = NULL)
+wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-5, maxit = 100, rank.max = NULL)
   {
   d <- dim(x)
   n <- d[1]

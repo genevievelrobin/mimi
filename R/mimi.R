@@ -164,6 +164,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
   d <- dim(y)
   n <- d[1]
   p <- d[2]
+  max.rank <- min(max.rank, min(n,p)-1)
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
   omega <- !is.na(y)
@@ -249,7 +250,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 #' res <- mimi.multi(y0, groups, var.type, lambda1 = 0.1, lambda2 = 0.2)
 mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                       thresh = 1e-4, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
+                       thresh = 1e-5, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
                        length = 20, upper = 12, lower = -12, offset = F, scale = F, max.rank = 20,
                        wmax = NULL)
 {
@@ -291,6 +292,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   d <- dim(y)
   n <- d[1]
   p <- d[2]
+  max.rank <- min(max.rank, min(n,p)-1)
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
   if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
@@ -330,7 +332,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
                              lambda1 = exp(lambda1.grid.log[i]), lambda2 = exp(lambda2.grid.log[i]),
                              maxit = maxit, upper = upper, lower = lower, mu0 = list.mu[[iter]],
                              alpha0 = list.alpha[[iter]], theta0 = list.theta[[iter]],
-                             thresh = thresh, trace.it = trace.it, offset = offset, max.rank = 5,
+                             thresh = thresh, trace.it = trace.it, offset = offset, max.rank = max.rank,
                              vt2 = vt2, scale = scale, wmax = wmax)
     iter <- iter + 1
     list.res[[iter]] <- res
@@ -372,7 +374,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 #' var.type <- rep("gaussian", 10)
 #' res <- mimi.lr(y0, var.type, lambda1 = 0.1)
 mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
-                       lambda1, maxit = 100, theta0 = NULL, thresh = 1e-4,
+                       lambda1, maxit = 100, theta0 = NULL, thresh = 1e-5,
                        trace.it = F, lambda1.max = NULL, length = 20, upper = 12, lower = -12,
                        offset = F, scale = F, max.rank = 20, wmax = NULL)
 {
@@ -411,6 +413,7 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
   d <- dim(y)
   n <- d[1]
   p <- d[2]
+  max.rank <- min(max.rank, min(n,p)-1)
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
   if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
@@ -420,7 +423,6 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
   if(is.null(theta0)) theta0 <- matrix(rep(0, n * p), nrow = n)
   theta <- theta0
   iter <- 1
-  list.mu <- list()
   list.theta <- list()
   list.theta[[1]] <- theta0
   list.res <- list()
@@ -429,7 +431,7 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
     res <- rwls_l1_nuc.lr(y, var.type = var.type, nlevel = nlevel, lambda1 = exp(lambda1.grid.log[i]),
                           maxit = maxit, upper = upper, lower = lower,
                           theta0 = list.theta[[iter]], thresh = thresh, trace.it = trace.it,
-                          offset = offset, max.rank = 20, vt2 = vt2, scale = scale,
+                          offset = offset, max.rank = max.rank, vt2 = vt2, scale = scale,
                           wmax = wmax)
     iter <- iter + 1
     list.res[[iter]] <- res

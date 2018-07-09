@@ -152,7 +152,9 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
   y <- theta
   y[, var.type == "poisson"] <- exp(y[, var.type == "poisson"])
   y[, var.type == "binary"] <- exp(y[, var.type == "binary"])/(1+exp(y[, var.type == "binary"]))
-  return(list(y = y0, param = theta, objective = objective))
+  y.imputed <- y0
+  y.imputed[is.na(y.imputed)] <- y[is.na(y.imputed)]
+  return(list(y = y0, theta = theta, objective = objective, y.imputed = y.imputed))
 }
 
 
