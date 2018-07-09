@@ -4,14 +4,16 @@
 \alias{wght}
 \title{wght}
 \usage{
-wght(y, param, var.type)
+wght(y, param, var.type, nlevel = NULL)
 }
 \arguments{
 \item{y}{real number: observation}
 
 \item{param}{real number: current value of parameter}
 
-\item{var.type}{type of variable y (gaussian, binomial, poisson)}
+\item{var.type}{type of variable y (gaussian, binary, poisson)}
+
+\item{nlevel}{vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories)}
 }
 \value{
 weight of the quadratic approximation
@@ -23,5 +25,5 @@ wght
 y <- rnorm(1)
 param <- 0.5
 var.type = "gaussian"
-wght <- wght(y, param, var.type)
+wght <- wght(y, param, var.type, nlevel = 1)
 }

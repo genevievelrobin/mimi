@@ -2,49 +2,71 @@
 #'
 #' @param y real number: observation
 #' @param param real number: current value of parameter
-#' @param var.type type of variable y (gaussian, binomial, poisson)
+#' @param var.type type of variable y (gaussian, binary, poisson)
+#' @param nlevel vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories)
 #' @return weight of the quadratic approximation
 #' @export
 #' @examples
 #' y <- rnorm(1)
 #' param <- 0.5
 #' var.type = "gaussian"
-#' wght <- wght(y, param, var.type)
-wght <- function(y, param, var.type){
+#' wght <- wght(y, param, var.type, nlevel = 1)
+wght <- function(y, param, var.type, nlevel = NULL, wmax){
   if(var.type == "gaussian"){
     ytilde <- y
     vtilde2 <- 1
-  } else if(var.type == "binomial"){
+  } else if(var.type == "binary"){
     vtilde2 <- 1 / 4
     ytilde <- 4 * y - 4 * (exp(param) / (1 + exp(param))) + param
   } else if (var.type == "poisson"){
     vtilde2 <- exp(param)
     ytilde <- (y - exp(param))/ vtilde2  + param
-  } else {
-    stop("Incorrect type of variable. Should be 'gaussian', 'binomial', or 'poisson'.")
+  } else if(var.type == "categorical"){
+    vtilde2 <- rep(0.25, nlevel)
+    ytilde <- 4*y - 4*exp(param)/sum(exp(param)) + param
+  }
+  else {
+    print(var.type)
+    stop("Incorrect type of variable. Should be 'gaussian', 'binary', 'poisson' or 'categorical'.")
   }
   return(list(ytilde = ytilde, vtilde2 = vtilde2))
 }
 
 #' quad_approx
 #'
-#' @param y column of observation (length n)
-#' @param param column of parameters (length n)
-#' @param var.type type of the variables in y (length 1)
-#' @return vector of weights for the quadratic approximation
+#' @param y observation matrix (nxP) - extended with dummies for cat variables
+#' @param param matrix of parameters (nxP) - extended for cat variables
+#' @param var.type type of the variables in y (length p<=P) - NOT extended for cat variables
+#' @param nlevel vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories) - NOT extended for cat variables
+#' @return matrix of weights for the quadratic approximation (nxP)
 #' @export
 #' @examples
-#' y <- rnorm(6)
-#' param <- rnorm(6)
-#' var.type <- "gaussian"
-#' wghts <- quad_approx(y, param, var.type)
-quad_approx <- function(y, param, var.type){
-  n <- length(y)
-  w <- rep(0, n)
-  w <- lapply(1:n, function(i) wght(y[i], param[i], var.type))
-  ytilde <- sapply(1:n, function(i) w[[i]]$ytilde)
-  vtilde2 <- sapply(1:n, function(i) w[[i]]$vtilde2)
-  return(list(ytilde = ytilde, vtilde2 = vtilde2))
+#' y <- matrix(rnorm(6*10), nrow = 6)
+#' param <- matrix(rnorm(6*10), nrow = 6)
+#' var.type <- rep("gaussian", 10)
+#' nlevel <- rep(1, 10)
+#' wghts <- quad_approx(y, param, var.type, nlevel)
+quad_approx <- function(y, param, var.type, nlevel, wmax){
+  n <- nrow(y)
+  p <- length(var.type)
+  yt <- rep(0, n)
+  vt <- rep(0, n)
+  count <- 1
+  for (j in 1:p){
+    w <- lapply(1:n, function(i) wght(y = y[i, count:(count+nlevel[j]-1)], param = param[i, count:(count+nlevel[j]-1)],
+                                      var.type = var.type[j], nlevel = nlevel[j], wmax))
+    count <- count + nlevel[j]
+    if(nlevel[j] == 1){
+      ytilde <- sapply(1:n, function(i) w[[i]]$ytilde)
+      vtilde2 <- sapply(1:n, function(i) w[[i]]$vtilde2)
+    } else{
+      ytilde <- t(sapply(1:n, function(i) w[[i]]$ytilde))
+      vtilde2 <- t(sapply(1:n, function(i) w[[i]]$vtilde2))
+    }
+    yt <- cbind(yt, as.matrix(ytilde))
+    vt <- cbind(vt, as.matrix(vtilde2))
+  }
+  return(list(ytilde = yt[, 2:ncol(yt)], vtilde2 = vt[, 2:ncol(vt)]))
 }
 
 #' Frob
@@ -111,13 +133,13 @@ log_factorial <- function(x){
 #' x <- matrix(rnorm(10*6), nrow = 10)
 #' x[sample(60, 10)] <- NA
 #' res <- wlra(x)
-wlra <- function(x, w = NULL, lambda = 0, x0 = NULL,
-                 thresh = 1e-6, maxit = 1e3, rank.max = NULL){
+wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-6, maxit = 1e3, rank.max = NULL)
+  {
   d <- dim(x)
   n <- d[1]
   p <- d[2]
   if(is.null(w)) w = matrix(rep(1, n*p), nrow = n)
-  if(is.null(rank.max)) rank.max <- min(n, p) - 1
+  if(is.null(rank.max)) rank.max <- min(n, p) - 1 else rank.max <- min(rank.max, min(n, p) - 1)
   if(is.null(x0)) x0 <- matrix(rep(0, n*p), nrow = n)
   xnas <- is.na(x)
   omega <- 1*(!xnas)
@@ -162,7 +184,7 @@ wlra <- function(x, w = NULL, lambda = 0, x0 = NULL,
 #' @param b positive number in (0,1) factor by which the step size is reduced
 #' @param lambda1 positive number, regularization parameter for nuclear norm penalty
 #' @param lambda2 positive number, regularization parameter for l1 norm penalty
-#' @param var.type vector of length p indicating column types for y (gaussian, binomial, poisson)
+#' @param var.type vector of length p indicating column types for y (gaussian, binary, poisson)
 #' @param thresh positive number, convergence criterion
 #' @export
 #' @import stats
@@ -184,7 +206,8 @@ wlra <- function(x, w = NULL, lambda = 0, x0 = NULL,
 #' v <- rep("gaussian", 10)
 #' t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v)
 bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                b = 0.5, lambda1, lambda2, var.type, thresh = 1e-3){
+                    b = 0.5, lambda1, lambda2, var.type, thresh = 1e-3){
+  #thresh = 0
   d <- dim(y0)
   n <- d[1]
   p <- d[2]
@@ -198,15 +221,15 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
                             na.rm = T)
   pois.tmp <- sum(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
                     exp(param.tmp[, var.type == "poisson"]), na.rm = T)
-  binom.tmp <- sum(- (y0[, var.type == "binomial"] * param.tmp[, var.type == "binomial"]) +
-                     log(1 + exp(param.tmp[, var.type == "binomial"])), na.rm = T)
+  binom.tmp <- sum(- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
+                     log(1 + exp(param.tmp[, var.type == "binary"])), na.rm = T)
   d.tmp <- svd(theta.tmp)$d
   gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
                         na.rm = T)
   pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
                 exp(param[, var.type == "poisson"]), na.rm = T)
-  binom <- sum(- (y0[, var.type == "binomial"] * param[, var.type == "binomial"]) +
-                 log(1 + exp(param[, var.type == "binomial"])), na.rm = T)
+  binom <- sum(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
+                 log(1 + exp(param[, var.type == "binary"])), na.rm = T)
 
   t <- 1
   mu2 <- (1-t)*mu.tmp + t*mu
@@ -225,8 +248,8 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
                           na.rm = T)
     pois <- sum(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
                   exp(param2[, var.type == "poisson"]), na.rm = T)
-    binom <- sum(- (y0[, var.type == "binomial"] * param2[, var.type == "binomial"]) +
-                   log(1 + exp(param2[, var.type == "binomial"])), na.rm = T)
+    binom <- sum(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+                   log(1 + exp(param2[, var.type == "binary"])), na.rm = T)
     d <- svd(theta2)$d
     diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha2))))
   }
@@ -248,7 +271,7 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 #' @param b number in (0,1) factor by which step size is reduced
 #' @param lambda1 positive number regularization parameter for nuclear norm penalty
 #' @param lambda2 positive number regularization parameter for l1 norm penalty
-#' @param var.type vector of length p indicating variable types (gaussian, binomial, poisson)
+#' @param var.type vector of length p indicating variable types (gaussian, binary, poisson)
 #' @param thresh positive number congervence criterion
 #'
 #' @import stats
@@ -272,6 +295,7 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 #' bls <- bls.multi(y0, gps, m, a, t, mt, at, tt, 1, 1, v)
 bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
                       lambda1, lambda2, var.type, thresh = 1e-3, b = 0.5){
+  #thresh = 0
   d <- dim(y0)
   n <- d[1]
   p <- d[2]
@@ -288,15 +312,15 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
                             na.rm = T)
   pois.tmp <- sum(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
                     exp(param.tmp[, var.type == "poisson"]), na.rm = T)
-  binom.tmp <- sum(- (y0[, var.type == "binomial"] * param.tmp[, var.type == "binomial"]) +
-                     log(1 + exp(param.tmp[, var.type == "binomial"])), na.rm = T)
+  binom.tmp <- sum(- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
+                     log(1 + exp(param.tmp[, var.type == "binary"])), na.rm = T)
   d.tmp <- svd(theta.tmp)$d
   gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
                         na.rm = T)
   pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
                 exp(param[, var.type == "poisson"]), na.rm = T)
-  binom <- sum(- (y0[, var.type == "binomial"] * param[, var.type == "binomial"]) +
-                 log(1 + exp(param[, var.type == "binomial"])), na.rm = T)
+  binom <- sum(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
+                 log(1 + exp(param[, var.type == "binary"])), na.rm = T)
 
   t <- 1
   mu2 <- (1-t)*mu.tmp + t*mu
@@ -315,8 +339,8 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
                           na.rm = T)
     pois <- sum(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
                   exp(param2[, var.type == "poisson"]), na.rm = T)
-    binom <- sum(- (y0[, var.type == "binomial"] * param2[, var.type == "binomial"]) +
-                   log(1 + exp(param2[, var.type == "binomial"])), na.rm = T)
+    binom <- sum(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+                   log(1 + exp(param2[, var.type == "binary"])), na.rm = T)
     d <- svd(theta2)$d
 
     diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha2))))
@@ -326,3 +350,69 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
 
 }
 
+
+#' bls
+#' Performs backtracking line search along a pre-specified search direction
+#' @param y0 nxp observations matrix
+#' @param theta nxp matrix direction of update for matrix of interactions
+#' @param theta.tmp nxp matrix, current matrix of interactions
+#' @param b positive number in (0,1) factor by which the step size is reduced
+#' @param lambda1 positive number, regularization parameter for nuclear norm penalty
+#' @param var.type vector of length p indicating column types for y (gaussian, binary, poisson)
+#' @param thresh positive number, convergence criterion
+#' @export
+#' @import stats
+#' @return A list with the following elements
+#' \item{theta}{(nb individuals) x (nb variables) matrix containing the individual effects}
+#' \item{objective}{a vector containing the value of the objective function at every iteration}
+#' \item{t}{the step size}
+#' @examples
+#' y <- matrix(rnorm(6 * 10), nrow = 6)
+#' theta <- matrix(rnorm(6 * 10), nrow = 6)
+#' thetat <- matrix(rnorm(6 * 10), nrow = 6)
+#' v <- rep("gaussian", 10)
+#' t <- bls.lr(y, theta, thetat, lambda1 = 1, var.type = v)
+bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e-3){
+  #thresh = 0
+  d <- dim(y0)
+  n <- d[1]
+  p <- d[2]
+  omega <- !is.na(y0)
+  param <- theta
+  param.tmp <- theta.tmp
+  gaus.tmp <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
+                            na.rm = T)
+  pois.tmp <- sum(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
+                    exp(param.tmp[, var.type == "poisson"]), na.rm = T)
+  binom.tmp <- sum(- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
+                     log(1 + exp(param.tmp[, var.type == "binary"])), na.rm = T)
+  d.tmp <- svd(theta.tmp)$d
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+                        na.rm = T)
+  pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
+                exp(param[, var.type == "poisson"]), na.rm = T)
+  binom <- sum(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
+                 log(1 + exp(param[, var.type == "binary"])), na.rm = T)
+
+  t <- 1
+  theta2 <- (1-t)*theta.tmp + t*theta
+  param2 <- (1-t)*param.tmp + t*param
+  diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d))
+  number <- gaus.tmp + pois.tmp + binom.tmp + lambda1 * sum(d.tmp)
+  while(diff < -abs(number)*thresh){
+    t <- b*t
+    theta2 <- (1-t)*theta.tmp + t*theta
+    param2 <- (1-t)*param.tmp + t*param
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+                          na.rm = T)
+    pois <- sum(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+                  exp(param2[, var.type == "poisson"]), na.rm = T)
+    binom <- sum(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+                   log(1 + exp(param2[, var.type == "binary"])), na.rm = T)
+    d <- svd(theta2)$d
+    diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d))
+  }
+  obj <- pois + gaus + binom + lambda1*d
+  return(list(theta = theta2, objective = obj, t=t))
+
+}

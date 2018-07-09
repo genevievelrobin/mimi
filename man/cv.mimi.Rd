@@ -9,7 +9,8 @@ cv.mimi(y, model = c("groups", "covariates"), x = NULL, groups = NULL,
   var.type, lambda1.min = NULL, lambda2.min = NULL, lambda1.max = NULL,
   lambda2.max = NULL, maxit = 100, mu0 = NULL, alpha0 = NULL,
   theta0 = NULL, thresh = 1e-04, trace.it = F, length = 20,
-  offset = F, nb.boot = 10, prob = 0.1, size.grid = 20)
+  offset = F, nb.boot = 10, prob = 0.1, size.grid = 20, max.rank = 20,
+  scale = F)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -20,7 +21,7 @@ cv.mimi(y, model = c("groups", "covariates"), x = NULL, groups = NULL,
 
 \item{groups}{factor of length n indicating groups}
 
-\item{var.type}{vector of length p indicating the types of the columns of y (gaussian, binomial, poisson)}
+\item{var.type}{vector of length p indicating the types of the columns of y (gaussian, binary, poisson)}
 
 \item{lambda1.min}{positive number, min value of nuclear norm regularization parameter}
 
@@ -44,13 +45,17 @@ cv.mimi(y, model = c("groups", "covariates"), x = NULL, groups = NULL,
 
 \item{length}{integer, length of the grid of lambda1 and lambda2 for warm start}
 
-\item{offset}{boolean, whether an offset should be fitted}
+\item{offset}{boolean, whether an offset should be fitted (default FALSE)}
 
 \item{nb.boot}{integer indicating the number of bootstrap samples for cross-validation}
 
 \item{prob}{number in (0,1) proportion of missing entries added in the bootstrap samples}
 
 \item{size.grid}{integer, length of the grid of lambda1 and lambda2 for cross-validation}
+
+\item{max.rank}{integer, maximum rank of interaction matrix theta}
+
+\item{scale}{boolean, whether column loss functions should be scaled (default FALSE)}
 }
 \value{
 A list with the following elements
@@ -66,16 +71,16 @@ cv.mimi
 Perform cross-validation for mimi model with covariates/groups along regularization path
 }
 \examples{
-n = 6; p = 2
+n = 4; p = 1
 y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
 y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
-idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
+var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
+idx_NA <- sample(1:(3 * n * p), size = round(0.05 * 3 * n * p))
 y[idx_NA] <- NA
-x <- matrix(rnorm(6*6*2), nrow = 6*6)
-res <- cv.mimi(y, model = "cov", x = x, var.type = var.type, maxit = 2, nb.boot = 2, size.grid = 2)
+x <- matrix(rnorm(4*3*2), nrow = 4*3)
+res <- cv.mimi(y, "cov", x, var.type = var.type, thresh = 1, nb.boot = 2, size.grid = 2)
 }

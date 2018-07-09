@@ -8,7 +8,7 @@
 #' @param prob number in (0,1) proportion of missing entries added in the bootstrap samples
 #' @param thresh positive number, convergence criterion
 #' @param maxit integer, maximum number of iterations
-#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binomial, poisson)
+#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binary, poisson)
 #' @param lambda1.max positive number, max value of nuclear norm regularization parameter
 #' @param lambda2.max positive number, max value of l1 norm regularization parameter
 #' @param lambda1.min positive number, min value of nuclear norm regularization parameter
@@ -19,7 +19,9 @@
 #' @param alpha0 Nxp matrix, optional starting point for group effects
 #' @param theta0 nxp matrix, optional starting point for interaction matrix
 #' @param trace.it boolean, whether convergence information should be printed
-#' @param offset boolean, whether an offset should be fitted
+#' @param max.rank integer, maximum rank of interaction matrix theta
+#' @param scale boolean, whether column loss functions should be scaled (default FALSE)
+#' @param offset boolean, whether an offset should be fitted (default FALSE)
 #'
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
@@ -32,36 +34,38 @@
 #' @import softImpute
 #'
 #' @examples
-#' n = 6; p = 2
+#' \dontrun{
+#' n = 4; p = 1
 #' y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 #' y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 #' y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
 #' y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
 #'            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
 #'            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-#' var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
-#' idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
+#' var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
+#' idx_NA <- sample(1:(3 * n * p), size = round(0.05 * 3 * n * p))
 #' y[idx_NA] <- NA
-#' x <- matrix(rnorm(6*6*2), nrow = 6*6)
-#' res <- cv.mimi(y, model = "cov", x = x, var.type = var.type, maxit = 2, nb.boot = 2, size.grid = 2)
-cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NULL,
-                    var.type, lambda1.min = NULL, lambda2.min = NULL,
-                    lambda1.max = NULL, lambda2.max = NULL, maxit = 100,
-                    mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                    thresh = 1e-4, trace.it = F, length = 20, offset = F, nb.boot = 10, prob = 0.1,
-                    size.grid = 20)
+#' x <- matrix(rnorm(4*3*2), nrow = 4*3)
+#' res <- cv.mimi(y, "cov", x, var.type = var.type, thresh = 1, nb.boot = 2, size.grid = 2)
+#' }
+cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NULL, var.type,
+                    lambda1.min = NULL, lambda2.min = NULL, lambda1.max = NULL,
+                    lambda2.max = NULL, maxit = 100, mu0 = NULL, alpha0 = NULL,
+                    theta0 = NULL, thresh = 1e-4, trace.it = F, length = 20, offset = F,
+                    nb.boot = 10, prob = 0.1, size.grid = 20, max.rank = 20, scale = F)
 {
   if(model == "groups"){
-    return (cv.mimi.multi(y, groups, nb.boot, prob , thresh,
-                          maxit, var.type, lambda1.max, lambda2.max,
-                          lambda1.min, lambda2.min, size.grid, length,
-                          mu0, alpha0, theta0, trace.it, offset))
+    return (cv.mimi.multi(y, groups = groups, var.type = var.type, lambda1.min = lambda1.min,
+                          lambda2.min = lambda2.min, lambda1.max = lambda1.max, lambda2.max = lambda2.max,
+                          maxit = maxit, mu0 = mu0, alpha0 = alpha0, theta0 = theta0, thresh = thresh,
+                          trace.it = trace.it, length = length, offset = offset, max.rank = max.rank,
+                          scale = scale, nb.boot = nb.boot, prob = prob, size.grid = size.grid))
   } else{
-    return(cv.mimi.cov(y, x, nb.boot, prob, thresh,
-                       maxit, var.type, lambda1.max,
-                       lambda2.max, lambda1.min,
-                       lambda2.min, size.grid, length, mu0,
-                       alpha0, theta0, trace.it, offset))
+    return(cv.mimi.cov(y, x = x, var.type = var.type, lambda1.min = lambda1.min,
+                       lambda2.min = lambda2.min, lambda1.max = lambda1.max, lambda2.max = lambda2.max,
+                       maxit = maxit, mu0 = mu0, alpha0 = alpha0, theta0 = theta0, thresh = thresh,
+                       trace.it = trace.it, length = length, offset = offset, max.rank = max.rank,
+                       scale = scale, nb.boot = nb.boot, prob = prob, size.grid = size.grid))
   }
 }
 
@@ -76,7 +80,7 @@ cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NUL
 #' @param prob number in (0,1) proportion of missing entries added in the bootstrap samples
 #' @param thresh positive number, convergence criterion
 #' @param maxit integer, maximum number of iterations
-#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binomial, poisson)
+#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binary, poisson)
 #' @param lambda1.max positive number, max value of nuclear norm regularization parameter
 #' @param lambda2.max positive number, max value of l1 norm regularization parameter
 #' @param lambda1.min positive number, min value of nuclear norm regularization parameter
@@ -87,7 +91,9 @@ cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NUL
 #' @param alpha0 Nxp matrix, optional starting point for group effects
 #' @param theta0 nxp matrix, optional starting point for interaction matrix
 #' @param trace.it boolean, whether convergence information should be printed
-#' @param offset boolean, whether an offset should be fitted
+#' @param scale boolean, whether column loss functions should be scaled (default FALSE)
+#' @param offset boolean, whether an offset should be fitted (default FALSE)
+#' @param max.rank integer, maximum rank of interaction matrix theta
 
 #'
 #' @return A list containing the following elements
@@ -100,17 +106,19 @@ cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NUL
 #' @import softImpute
 #'
 #' @examples
+#' \dontrun{
 #' y <- matrix(rnorm(4 * 3), nrow = 4)
 #' y[sample(1:12, size = 3)] <- NA
 #' groups <- c(1,1,2,2)
 #' groups <- as.factor(groups)
 #' vt <- rep("gaussian", 3)
-#' res <- cv.mimi.multi(y, groups, 2, var.type = vt, maxit = 1, size.grid = 2)
-cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
-                          maxit = 100, var.type, lambda1.max = NULL, lambda2.max = NULL,
-                          lambda1.min = NULL, lambda2.min = NULL, size.grid = 20, length = 20,
-                          mu0 = NULL, alpha0 = NULL, theta0 = NULL, trace.it = F,
-                          offset = F){
+#' res <- cv.mimi.multi(y, groups, 2, var.type = vt, maxit = 1, size.grid = 2, thresh = 1)
+#' }
+cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4, maxit = 100,
+                          var.type, lambda1.max = NULL, lambda2.max = NULL, lambda1.min = NULL,
+                          lambda2.min = NULL, size.grid = 20, length = 20, mu0 = NULL,
+                          alpha0 = NULL, theta0 = NULL, trace.it = F, offset = F, scale = F,
+                          max.rank = 20){
   y <- as.matrix(y)
   d <- dim(y)
   n <- d[1]
@@ -146,7 +154,7 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
   iter <- 1
   obs.idx <- which(omega)
   na.func <- function(x, prob){
-    yp <- y
+    yp <- x
     yp[sample(obs.idx, round(prob * sum(omega)))] <- NA
     yp
   }
@@ -158,7 +166,8 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
                                                                          function(j) mimi.multi(y.list[[k]], groups = groups, var.type = var.type,
                                                                                                 lambda1 = exp(lambda1.grid.log[i]),
                                                                                                 lambda2 = exp(lambda2.grid.log[j]),length = length,
-                                                                                                thresh = thresh, trace.it = trace.it, maxit = maxit)))
+                                                                                                thresh = thresh, trace.it = trace.it, maxit = maxit,
+                                                                                                max.rank = max.rank, offset = offset, scale = scale)))
     res.cv[[k]] <- lapply(1:length(lambda1.grid.log), function(i) lapply(1:length(lambda2.grid.log),
                                                                          function(j) res.cv[[k]][[i]][[j]]$list.res[[length]]))
 
@@ -189,7 +198,7 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
 #' @param prob number in (0,1) proportion of missing entries added in the bootstrap samples
 #' @param thresh positive number, convergence criterion
 #' @param maxit integer, maximum number of iterations
-#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binomial, poisson)
+#' @param var.type vector of length p indicating the types of the columns of y (gaussian, binary, poisson)
 #' @param lambda1.max positive number, max value of nuclear norm regularization parameter
 #' @param lambda2.max positive number, max value of l1 norm regularization parameter
 #' @param lambda1.min positive number, min value of nuclear norm regularization parameter
@@ -200,7 +209,9 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
 #' @param alpha0 Nxp matrix, optional starting point for group effects
 #' @param theta0 nxp matrix, optional starting point for interaction matrix
 #' @param trace.it boolean, whether convergence information should be printed
-#' @param offset boolean, whether an offset should be fitted
+#' @param scale boolean, whether column loss functions should be scaled (default FALSE)
+#' @param offset boolean, whether an offset should be fitted (default FALSE)
+#' @param max.rank integer, maximum rank of interaction matrix theta
 #'
 #' @return A list containing the following elements
 #' \item{lambda1}{The selected value of lambda1 (regularization parameter for nuclear norm)}
@@ -212,6 +223,7 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
 #' @import softImpute
 #'
 #' @examples
+#' \dontrun{
 #' n = 6; p = 2
 #' y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 #' y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
@@ -219,16 +231,17 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4,
 #' y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
 #'            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
 #'            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-#' var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
+#' var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
 #' idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 #' y[idx_NA] <- NA
 #' x <- matrix(rnorm(6*6*2), nrow = 6*6)
 #' res <- cv.mimi.cov(y, x, var.type = var.type, maxit = 2, nb.boot = 2, thresh =1)
-cv.mimi.cov <- function(y, x, nb.boot = 5, prob = 0.1, thresh = 1e-4,
-                        maxit = 100, var.type, lambda1.max = NULL,
-                        lambda2.max = NULL, lambda1.min = NULL,
+#' }
+cv.mimi.cov <- function(y, x, nb.boot = 5, prob = 0.1, thresh = 1e-4, maxit = 100, var.type,
+                        lambda1.max = NULL, lambda2.max = NULL, lambda1.min = NULL,
                         lambda2.min = NULL, size.grid = 10, length = 20, mu0 = NULL,
-                        alpha0 = NULL, theta0 = NULL, trace.it = F, offset = T){
+                        alpha0 = NULL, theta0 = NULL, trace.it = F, offset = T, scale = F,
+                        max.rank = 20){
   x <- as.matrix(x)
   y <- as.matrix(y)
   d <- dim(y)
@@ -264,13 +277,13 @@ cv.mimi.cov <- function(y, x, nb.boot = 5, prob = 0.1, thresh = 1e-4,
   for(k in 1:nb.boot){
     res.cv[[k]] <- lapply(1:size.grid,
                           function(i) lapply(1:size.grid,
-                                             function(j) mimi.cov(y.list[[k]], x,
-                                                                   var.type = var.type,
-                                                                   lambda1 = exp(lambda1.grid.log[i]),
-                                                                   lambda2 = exp(lambda2.grid.log[j]),
-                                                                   thresh = thresh, trace.it = trace.it,
-                                                                   offset = offset, lambda1.max = lambda1.max,
-                                                                   lambda2.max = lambda2.max)))
+                                             function(j) mimi.cov(y.list[[k]], x, var.type = var.type,
+                                                                  lambda1 = exp(lambda1.grid.log[i]),
+                                                                  lambda2 = exp(lambda2.grid.log[j]),
+                                                                  thresh = thresh, trace.it = trace.it,
+                                                                  lambda1.max = lambda1.max,
+                                                                  lambda2.max = lambda2.max, length = length,
+                                                                  max.rank = max.rank, offset = offset, scale = scale)))
 
     res.cv[[k]] <- lapply(1:size.grid,
                           function(i) lapply(1:size.grid,
@@ -289,7 +302,7 @@ cv.mimi.cov <- function(y, x, nb.boot = 5, prob = 0.1, thresh = 1e-4,
   lambda1.cv <- exp(lambda1.grid.log)[idx[1]]
   lambda2.cv <- exp(lambda2.grid.log)[idx[2]]
   estim.cv <- mimi.cov(y, x, lambda1 = lambda1.cv, lambda2 = lambda2.cv,
-                        var.type = var.type, trace.it = T, length = length, thresh = thresh)
+                       var.type = var.type, trace.it = T, length = length, thresh = thresh)
   return(list(lambda1 = lambda1.cv, lambda2 = lambda2.cv, estim.cv = estim.cv, error = error,
               lambda1.grid = exp(lambda1.grid.log), lambda2.grid = exp(lambda2.grid.log)))
 

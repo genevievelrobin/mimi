@@ -4,24 +4,27 @@
 \alias{quad_approx}
 \title{quad_approx}
 \usage{
-quad_approx(y, param, var.type)
+quad_approx(y, param, var.type, nlevel)
 }
 \arguments{
-\item{y}{column of observation (length n)}
+\item{y}{observation matrix (nxP) - extended with dummies for cat variables}
 
-\item{param}{column of parameters (length n)}
+\item{param}{matrix of parameters (nxP) - extended for cat variables}
 
-\item{var.type}{type of the variables in y (length 1)}
+\item{var.type}{type of the variables in y (length p<=P) - NOT extended for cat variables}
+
+\item{nlevel}{vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories) - NOT extended for cat variables}
 }
 \value{
-vector of weights for the quadratic approximation
+matrix of weights for the quadratic approximation (nxP)
 }
 \description{
 quad_approx
 }
 \examples{
-y <- rnorm(6)
-param <- rnorm(6)
-var.type <- "gaussian"
-wghts <- quad_approx(y, param, var.type)
+y <- matrix(rnorm(6*10), nrow = 6)
+param <- matrix(rnorm(6*10), nrow = 6)
+var.type <- rep("gaussian", 10)
+nlevel <- rep(1, 10)
+wghts <- quad_approx(y, param, var.type, nlevel)
 }

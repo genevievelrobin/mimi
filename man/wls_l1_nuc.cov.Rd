@@ -6,7 +6,7 @@
 \usage{
 wls_l1_nuc.cov(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-05,
   maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL, trace.it = F,
-  offset = F)
+  offset = F, max.rank = 20)
 }
 \arguments{
 \item{y}{observation matrix}
@@ -32,6 +32,8 @@ wls_l1_nuc.cov(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-05,
 \item{trace.it}{boolean, if TRUE information about convergence will be displayes, default FALSE}
 
 \item{offset}{boolean, if TRUE offset is computed, otherwise set to 0, default FALSE}
+
+\item{max.rank}{integer, maximum rank of interaction matrix}
 }
 \value{
 A list vith the following elements

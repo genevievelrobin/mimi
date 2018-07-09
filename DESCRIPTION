@@ -4,13 +4,14 @@ Title: Main Effects and Interactions in Mixed and Incomplete Data
 Version: 0.1.0
 Author: Geneviève Robin
 Maintainer: Genevieve Robin <genevieve.robin@polytechnique.edu>
-Description: Estimation of sparse main effects and low-rank interactions in mixed data sets with missing values. 
+Description: Estimation of sparse main effects and low-rank interactions in mixed data sets with missing values. G.Robin, O.Klopp, J.Josse, É.Moulines, R.Tibshirani (2018) <arxiv:1806.09734>
 Depends: R (>= 2.10)
 License: GPL-3
 Imports: glmnet,
 	 softImpute, 
 	 stats,
-	 ade4
+	 ade4,
+	 FactoMineR
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1

@@ -29,7 +29,7 @@ bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp, lambda1,
 
 \item{lambda2}{positive number regularization parameter for l1 norm penalty}
 
-\item{var.type}{vector of length p indicating variable types (gaussian, binomial, poisson)}
+\item{var.type}{vector of length p indicating variable types (gaussian, binary, poisson)}
 
 \item{thresh}{positive number congervence criterion}
 

@@ -12,7 +12,8 @@
 #' @param theta0 matrix of size (nb of ind.)x(number of variables), initial value of the individual effect, default 0
 #' @param trace.it boolean, if TRUE information about convergence will be displayes, default FALSE
 #' @param offset boolean, whether an offset should be fitted
-#' @param max.rank integer, maximum rank of interaction matrix
+#' @param max.rank integer, maximum rank of interaction matrix theta
+
 #'
 #' @return A list with the following elements
 #' \item{y}{the original data matrix}
@@ -30,12 +31,13 @@
 #' groups <- c(1,1,2,2,3,3)
 #' groups <- as.factor(groups)
 #' res <- wls_l1_nuc.multi(y0, groups, lambda1 = 0.1, lambda2 = 0.2)
-wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL, thresh = 1e-5,
-                             maxit = 1e3, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                             trace.it = F, offset = F, max.rank = 5) {
+wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL,
+                             thresh = 1e-5, maxit = 1e3, mu0 = NULL, alpha0 = NULL,
+                             theta0 = NULL, trace.it = F, offset = F,max.rank = 5) {
   d <- dim(y)
   n <- d[1]
   p <- d[2]
+  y <- matrix(as.numeric(as.character(y)), nrow = n)
   y0 <- y
   groups <- as.factor(groups)
   N <- nlevels(groups)
@@ -105,13 +107,14 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL, thresh
 }
 
 
-#' rwls_l1_nuc
+#' rwls_l1_nuc.multi
 #'
 #' @param y observation matrix
 #' @param groups factor indicating group memberships, if vector will be treated as a factor
-#' @param var.type vector of size p indicating types of columns in y (gaussian, binomial, poisson)
+#' @param var.type vector of size p indicating types of columns in y (gaussian, binary, poisson)
 #' @param lambda1 positive number, value of the nuclear norm regularization parameter
 #' @param lambda2 positive number, value of the l1 norm regularization parameter
+#' @param nlevel vector of integers indicating the number of levels of each factor in y
 #' @param thresh positive number, convergence criterion
 #' @param maxit integer, maximum number of iterations
 #' @param mu0 real number, initial value of the offset, default 0
@@ -120,9 +123,10 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL, thresh
 #' @param trace.it boolean, if TRUE information about convergence will be displayes, default FALSE
 #' @param upper real number upper bound on entries of alpha and theta
 #' @param lower real number lower bound on entries of alpha and theta
-#' @param scale boolean indicating whether or not the cost functions should be scaled by column
 #' @param offset boolean, whether an offset should be fitted
-#' @param max.rank integer, maximum rank of interaction matrix
+#' @param scale boolean indicating whether or not the column loss functions should be scaled
+#' @param max.rank integer, maximum rank of interaction matrix theta
+#' @param vt2 vector indicating types of the columns of the extended data frame y (with dummies for every category)
 #'
 #' @return A list vith the following elements
 #' \item{y}{the original data matrix}
@@ -133,6 +137,7 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL, thresh
 #' \item{theta}{a (nb individuals) x (nb variables) matrix containing the individual effects}
 #' \item{objective}{a vector containing the value of the objective function at every iteration}
 #' @export
+#' @import FactoMineR
 #'
 #' @examples
 #' n = 6; p = 2
@@ -142,45 +147,22 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL, thresh
 #' y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
 #'            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
 #'            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-#' var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
+#' var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
 #' idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 #' y[idx_NA] <- NA
 #' groups <- c(1,1,2,2,3,3)
 #' groups <- as.factor(groups)
-#' res <- rwls_l1_nuc.multi(y, groups, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
-rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, maxit = 100, upper = 12,
-                       lower = -12, mu0 = NULL, alpha0 = NULL, theta0 = NULL, thresh = 1e-5,
-                       trace.it = F, scale = F, offset = F, max.rank = 5){
+#' nl <- rep(1, 6)
+#' res <- rwls_l1_nuc.multi(y, groups, var.type, 0.1, 0.2, nl)
+rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
+                              maxit = 100, upper = 12, lower = -12, mu0 = NULL,
+                              alpha0 = NULL, theta0 = NULL, thresh = 1e-5, trace.it = F,
+                              offset = F, scale = F, max.rank = 5, vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
   p <- d[2]
-  if(scale == T){
-    moy <- colMeans(y, na.rm = T)
-    moy[var.type == "binomial"] <- log(moy[var.type == "binomial"]/(1-moy[var.type == "binomial"]))
-    moy[var.type == "poisson"] <- log(moy[var.type == "poisson"])
-    scaling <- rep(0, p)
-    p1 <- sum(var.type == "gaussian")
-    p2 <- sum(var.type == "binomial")
-    p3 <- sum(var.type == "poisson")
-    if(p1>0){
-      scaling[var.type == "gaussian"] <- 0.5*colSums((y[, var.type == "gaussian"] - t(matrix(rep(moy[var.type == "gaussian"],
-                                                                                                 n), nrow = p1)))^2,na.rm = T)/(n-1)
-    }
-    if(p2>0){
-      scaling[var.type == "binomial"] <- colSums(- (y[, var.type == "binomial"] * t(matrix(rep(moy[var.type == "binomial"],
-                                                                                               n), nrow = p2))) +
-                                                   log(1 + exp(t(matrix(rep(moy[var.type == "binomial"],
-                                                                            n), nrow = p2)))),na.rm = T)/(n-1)
-
-    }
-    if(p3>0){
-      scaling[var.type == "poisson"] <- colSums(- (y[, var.type == "poisson"] * t(matrix(rep(moy[var.type == "poisson"],
-                                                                                             n), nrow = p3))) +
-                                                  exp(t(matrix(rep(moy[var.type == "poisson"],n), nrow = p3))) + log_factorial(y[, var.type == "poisson"]),na.rm = T)/(n-1)
-
-    }
-    lambda2 <- scaling*lambda2
-  }
+  y <- as.matrix(y)
+  y <- matrix(as.numeric(y), nrow = n)
   groups <- as.factor(groups)
   N <- nlevels(groups)
   omega <- !is.na(y)
@@ -204,19 +186,54 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, maxit = 100
   y0 <- y
   error <- 1
   iter <- 0
+  if(scale == T){
+    moy <- colMeans(y, na.rm = T)
+    moy[vt2 == "binary"] <- log(moy[vt2 == "binary"]/(1-moy[vt2 == "binary"]))
+    moy[vt2 == "poisson"] <- log(moy[vt2 == "poisson"])
+    moy[vt2 == "categorical"] <- log(moy[vt2 == "categorical"]/(1-moy[vt2 == "categorical"]))
+    scaling <- rep(0, p)
+    p1 <- sum(var.type == "gaussian")
+    p2 <- sum(var.type == "binary")
+    p3 <- sum(var.type == "poisson")
+    p4 <- sum(var.type == "categorical")
+    if(p1>0){
+      scaling[vt2 == "gaussian"] <- 0.5*colSums((y[, vt2 == "gaussian"] - t(matrix(rep(moy[vt2 == "gaussian"],
+                                                                                       n), nrow = p1)))^2,na.rm = T)/(n-1)
+    }
+    if(p2>0){
+      scaling[vt2 == "binary"] <- colSums(- (y[, vt2 == "binary"] * t(matrix(rep(moy[vt2 == "binary"],
+                                                                                 n), nrow = p2))) +
+                                            log(1 + exp(t(matrix(rep(moy[vt2 == "binary"],
+                                                                     n), nrow = p2)))),na.rm = T)/(n-1)
+
+    }
+    if(p3>0){
+      scaling[vt2 == "poisson"] <- colSums(- (y[, vt2 == "poisson"] * t(matrix(rep(moy[vt2 == "poisson"],
+                                                                                   n), nrow = p3))) +
+                                             exp(t(matrix(rep(moy[vt2 == "poisson"],n), nrow = p3))) + log_factorial(y[, vt2 == "poisson"]),na.rm = T)/(n-1)
+
+    }
+    if(p4>0){
+      scaling[vt2 == "categorical"] <- colSums(- (y[, vt2 == "categorical"] * t(matrix(rep(moy[vt2 == "categorical"],
+                                                                                           n), nrow = sum(vt2 == "categorical")))) +
+                                                 log(1 + exp(t(matrix(rep(moy[vt2 == "categorical"],
+                                                                          n), nrow = sum(vt2 == "categorical"))))),na.rm = T)/(n-1)
+
+    }
+  } else scaling <- rep(1, ncol(y))
+  sc <- matrix(rep(scaling, n), nrow = n, byrow = T)
   while((error > thresh) && (iter < maxit)){
     iter <- iter + 1
     mu.tmp <- mu
     alpha.tmp <- alpha
     theta.tmp <- theta
-    yv <- lapply(1:p, function(j) quad_approx(y0[, j], param[, j], var.type[j]))
-    ytilde <- do.call(cbind, lapply(yv, function(t) t$ytilde))
-    vtilde2 <- matrix(rep(1, n*p), nrow = n)
-    vtilde2[, var.type == "binomial"] <- 0.25
-    vtilde2 <- do.call(cbind, lapply(yv, function(t) t$vtilde2))
+    yv <- quad_approx(y0, param, var.type, nlevel, wmax)
+    ytilde <- yv$ytilde
+    vtilde2 <- yv$vtilde2
+    vtilde2 <- vtilde2 / max(vtilde2)
+    vtilde2 <- sweep(vtilde2, 2, scaling, "/")
     lambda1w <- lambda1 / (max(vtilde2))
     lambda2w <- lambda2 / (max(vtilde2))
-    vtilde2 <- vtilde2 / max(vtilde2)
     res_approx <- wls_l1_nuc.multi(ytilde, groups, lambda1w, lambda2w, weights = vtilde2,
                                    thresh = thresh, mu0 = mu.tmp, alpha0 = alpha.tmp,
                                    theta0 = theta.tmp, trace.it = F, maxit = maxit,
@@ -239,19 +256,31 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, maxit = 100
     theta <- res$theta
     alpha.rep <- matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
     param <- mu + alpha.rep + theta
-    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+
+    gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
                           na.rm = T)
-    pois <- sum(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
-                  exp(param[, var.type == "poisson"]), na.rm = T)
-    binom <- sum(- (y0[, var.type == "binomial"] * param[, var.type == "binomial"]) +
-                   log(1 + exp(param[, var.type == "binomial"])), na.rm = T)
+    pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
+                  exp(param[, var.type == "poisson"])), na.rm = T)
+    binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
+                   log(1 + exp(param[, var.type == "binary"]))), na.rm = T)
+    truc <- rep(0, n)
+    if(sum(var.type=="categorical")>0){
+      for(j in 1:sum(var.type=="categorical")){
+        tt <- rowSums(exp(param[, which(var.type=="categorical")[j]:(which(var.type=="categorical")[j]+nlevel[which(var.type=="categorical")[j]]-1)]))
+        truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
+      }
+      truc <- truc[, 2:ncol(truc)]
+      cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
+                      log(truc))), na.rm = T)
+    } else cat <- 0
+
     d <- svd(theta)$d
     if(length(lambda2) == 1){
       objective <- c(objective, min(.Machine$double.xmax,
-                                    (pois + gaus + binom + lambda1 * sum(d) + lambda2 * sum(abs(alpha)))))
+                                    (pois + gaus + binom + cat + lambda1 * sum(d) + lambda2 * sum(abs(alpha)))))
     } else {
       objective <- c(objective, min(.Machine$double.xmax,
-                                    (pois + gaus + binom + lambda1 * sum(d) + sum(lambda2 * t(abs(alpha))))))
+                                    (pois + gaus + binom + cat+ lambda1 * sum(d) + sum(lambda2 * t(abs(alpha))))))
     }
 
     if(iter == 1) {
@@ -270,7 +299,7 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, maxit = 100
   if(error < thresh) cvg = T else cvg = F
   y <- mu + alpha.rep + theta
   y[, var.type == "poisson"] <- exp(y[, var.type == "poisson"])
-  y[, var.type == "binomial"] <- exp(y[, var.type == "binomial"])/(1+exp(y[, var.type == "binomial"]))
+  y[, var.type == "binary"] <- exp(y[, var.type == "binary"])/(1+exp(y[, var.type == "binary"]))
   y.imputed <- y0
   y.imputed[is.na(y0)] <- y[is.na(y0)]
   return(list(y = y0, y.imputed = y.imputed, param = mu + alpha.rep + theta,

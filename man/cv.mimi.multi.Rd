@@ -7,7 +7,8 @@
 cv.mimi.multi(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-04,
   maxit = 100, var.type, lambda1.max = NULL, lambda2.max = NULL,
   lambda1.min = NULL, lambda2.min = NULL, size.grid = 20, length = 20,
-  mu0 = NULL, alpha0 = NULL, theta0 = NULL, trace.it = F, offset = F)
+  mu0 = NULL, alpha0 = NULL, theta0 = NULL, trace.it = F, offset = F,
+  scale = F, max.rank = 20)
 }
 \arguments{
 \item{y}{nxp observations matrix}
@@ -22,7 +23,7 @@ cv.mimi.multi(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-04,
 
 \item{maxit}{integer, maximum number of iterations}
 
-\item{var.type}{vector of length p indicating the types of the columns of y (gaussian, binomial, poisson)}
+\item{var.type}{vector of length p indicating the types of the columns of y (gaussian, binary, poisson)}
 
 \item{lambda1.max}{positive number, max value of nuclear norm regularization parameter}
 
@@ -44,7 +45,11 @@ cv.mimi.multi(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-04,
 
 \item{trace.it}{boolean, whether convergence information should be printed}
 
-\item{offset}{boolean, whether an offset should be fitted}
+\item{offset}{boolean, whether an offset should be fitted (default FALSE)}
+
+\item{scale}{boolean, whether column loss functions should be scaled (default FALSE)}
+
+\item{max.rank}{integer, maximum rank of interaction matrix theta}
 }
 \value{
 A list containing the following elements
@@ -63,5 +68,5 @@ y[sample(1:12, size = 3)] <- NA
 groups <- c(1,1,2,2)
 groups <- as.factor(groups)
 vt <- rep("gaussian", 3)
-res <- cv.mimi.multi(y, groups, 2, var.type = vt, maxit = 1, size.grid = 2)
+res <- cv.mimi.multi(y, groups, 2, var.type = vt, maxit = 1, size.grid = 2, thresh = 1)
 }

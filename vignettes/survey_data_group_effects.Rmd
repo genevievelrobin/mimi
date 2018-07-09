@@ -36,11 +36,11 @@ The goal is then to estimate the vector of group effects $\Talpha$ and the matri
 
 ```{r preprocessing}
 # indicate the column types
-var.type <- c("gaussian", "binomial", "gaussian", "binomial",
-              "gaussian", "binomial", "binomial", "gaussian",
-              "gaussian", "binomial", "gaussian", "gaussian",
-              "gaussian", "binomial", "gaussian", "gaussian",
-              "binomial", "binomial", "gaussian", "binomial")
+var.type <- c("gaussian", "binary", "gaussian", "binary",
+              "gaussian", "binary", "binary", "gaussian",
+              "gaussian", "binary", "gaussian", "gaussian",
+              "gaussian", "binary", "gaussian", "gaussian",
+              "binary", "binary", "gaussian", "binary")
 
 # scale the numeric variables
 acs2016$survey[, var.type=="gaussian"] <- scale(acs2016$survey[, var.type=="gaussian"])
@@ -51,8 +51,7 @@ acs2016$survey <- as.matrix(acs2016$survey)
 We can now perform the estimation
 ```{r estim}
 # takes a few minutes
-res <- mimi(acs2016$survey, model = "groups", groups = acs2016$fes, var.type = var.type,
-            thresh = 1e-3, lambda1 = 100, lambda2 = 500, maxit = 1e3)
+res <- mimi(acs2016$survey, model = "groups", groups = acs2016$fes, var.type = var.type, thresh = 1e-3, lambda1 = 100, lambda2 = 500, maxit = 1e3)
 colnames(res$list.alpha[[20]]) <- colnames(acs2016$survey)
 rownames(res$list.alpha[[20]]) <- c("Couple Both in LF", "Couple H in LF/ W not in LF",
                          "Couple H not in LF W in LF", "Couple neither in LF",

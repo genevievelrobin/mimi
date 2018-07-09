@@ -4,20 +4,23 @@
 \alias{rwls_l1_nuc.cov}
 \title{rwls_l1_nuc.cov}
 \usage{
-rwls_l1_nuc.cov(y, x, var.type, lambda1, lambda2, maxit = 100, upper = 12,
-  lower = -12, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-  thresh = 1e-05, trace.it = F, scale = F, offset = F)
+rwls_l1_nuc.cov(y, x, var.type, lambda1, lambda2, nlevel = NULL,
+  maxit = 100, upper = 12, lower = -12, mu0 = NULL, alpha0 = NULL,
+  theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F, scale = F,
+  max.rank = 20, vt2 = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}
 
 \item{x}{(np)xN covariates matrix}
 
-\item{var.type}{vector of size p indicating types of columns in y (gaussian, binomial, poisson)}
+\item{var.type}{vector of size p indicating types of columns in y (gaussian, binary, poisson)}
 
 \item{lambda1}{positive number, value of the nuclear norm regularization parameter}
 
 \item{lambda2}{positive number, value of the l1 norm regularization parameter}
+
+\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
 
 \item{maxit}{integer, maximum number of iterations}
 
@@ -35,9 +38,13 @@ rwls_l1_nuc.cov(y, x, var.type, lambda1, lambda2, maxit = 100, upper = 12,
 
 \item{trace.it}{boolean, if TRUE information about convergence will be displayes, default FALSE}
 
-\item{scale}{boolean, indicates whether or not cost functions should be scaled by column}
-
 \item{offset}{boolean, if TRUE offset is computed, otherwise set to 0, default FALSE}
+
+\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
+
+\item{max.rank}{integer, maximum rank of interaction matrix theta}
+
+\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
 }
 \value{
 A list vith the following elements
@@ -60,9 +67,10 @@ y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
 y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
+var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
 idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 y[idx_NA] <- NA
 x <- matrix(rnorm(6*6*2), nrow = 6*6)
-res <- rwls_l1_nuc.cov(y, x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
+nl <- rep(1, 6)
+res <- rwls_l1_nuc.cov(y, x, var.type, 0.1, 0.2, nl)
 }

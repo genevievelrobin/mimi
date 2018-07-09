@@ -33,7 +33,7 @@ wls_l1_nuc.multi(y, groups, lambda1, lambda2, weights = NULL,
 
 \item{offset}{boolean, whether an offset should be fitted}
 
-\item{max.rank}{integer, maximum rank of interaction matrix}
+\item{max.rank}{integer, maximum rank of interaction matrix theta}
 }
 \value{
 A list with the following elements

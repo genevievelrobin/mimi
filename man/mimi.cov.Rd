@@ -5,17 +5,18 @@
 \title{mimi.cov
 Compute solution of mimi with covariates effects along regularization path}
 \usage{
-mimi.cov(y, x, var.type, lambda1, lambda2, maxit = 1000, mu0 = NULL,
-  alpha0 = NULL, theta0 = NULL, thresh = 1e-04, trace.it = F,
-  lambda1.max = NULL, lambda2.max = NULL, length = 20, upper = 12,
-  lower = -12, scale = F, offset = F)
+mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
+  lambda1, lambda2, maxit = 1000, mu0 = NULL, alpha0 = NULL,
+  theta0 = NULL, thresh = 1e-04, trace.it = F, lambda1.max = NULL,
+  lambda2.max = NULL, length = 20, upper = 12, lower = -12,
+  offset = F, scale = F, max.rank = 20)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
 
 \item{x}{(np)xN matrix of covariates}
 
-\item{var.type}{vector of length p indicating the data types of the columns of y (gaussian, binomial or poisson)}
+\item{var.type}{vector of length p indicating the data types of the columns of y (gaussian, binary or poisson)}
 
 \item{lambda1}{positive number regularization parameter for nuclear norm penalty}
 
@@ -43,9 +44,11 @@ mimi.cov(y, x, var.type, lambda1, lambda2, maxit = 1000, mu0 = NULL,
 
 \item{lower}{real number lower bound on entries of alpha and theta}
 
-\item{scale}{boolean indicating whether or not the cost functions should be scaled by column}
-
 \item{offset}{boolean indicating whether or not an offset should be fitted}
+
+\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
+
+\item{max.rank}{integer, maximum rank of interaction matrix theta}
 }
 \value{
 A list with the following elements
@@ -68,7 +71,7 @@ y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
 y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
+var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
 idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 y[idx_NA] <- NA
 x <- matrix(rnorm(6*6*2), nrow = 6*6)
