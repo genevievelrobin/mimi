@@ -165,8 +165,6 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
   y <- matrix(as.numeric(y), nrow = n)
   groups <- as.factor(groups)
   N <- nlevels(groups)
-  omega <- !is.na(y)
-  ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
   if(is.null(mu0)) mu0 <-0
   if(is.null(alpha0)) {
     alpha0 <- rep(0, N * p)
@@ -222,6 +220,9 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
     }
   } else scaling <- rep(1, ncol(y))
   sc <- matrix(rep(scaling, n), nrow = n, byrow = T)
+  omega <- !is.na(y)
+  ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
+
   while((error > thresh) && (iter < maxit)){
     iter <- iter + 1
     mu.tmp <- mu
@@ -230,10 +231,10 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
     yv <- quad_approx(y0, param, var.type, nlevel, wmax)
     ytilde <- yv$ytilde
     vtilde2 <- yv$vtilde2
-    vtilde2 <- vtilde2 / max(vtilde2)
-    vtilde2 <- sweep(vtilde2, 2, scaling, "/")
+    vtilde2 <- vtilde2/sc
     lambda1w <- lambda1 / (max(vtilde2))
     lambda2w <- lambda2 / (max(vtilde2))
+    vtilde2 <- vtilde2 / max(vtilde2)
     res_approx <- wls_l1_nuc.multi(ytilde, groups, lambda1w, lambda2w, weights = vtilde2,
                                    thresh = thresh, mu0 = mu.tmp, alpha0 = alpha.tmp,
                                    theta0 = theta.tmp, trace.it = F, maxit = maxit,

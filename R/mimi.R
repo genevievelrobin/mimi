@@ -297,8 +297,6 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   y <- matrix(as.numeric(y), nrow = n)
   if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
   omega <- !is.na(y)
-  w.groups <- aggregate(matrix(omega, nrow = n), list(groups), sum)[, 2:(p + 1)]
-  w.groups[w.groups == 0] <- 1
   if(is.null(lambda2.max)) lambda2.max <- 1e3*lambda2
   ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
   N <- nlevels(groups)

@@ -16,14 +16,14 @@ wght <- function(y, param, var.type, nlevel = NULL, wmax){
     ytilde <- y
     vtilde2 <- 1
   } else if(var.type == "binary"){
-    vtilde2 <- 1 / 4
-    ytilde <- 4 * y - 4 * (exp(param) / (1 + exp(param))) + param
+    vtilde2 <- 1/4
+    ytilde <- y/vtilde2 - (exp(param) / (1 + exp(param)))/vtilde2 + param
   } else if (var.type == "poisson"){
     vtilde2 <- exp(param)
     ytilde <- (y - exp(param))/ vtilde2  + param
   } else if(var.type == "categorical"){
     vtilde2 <- rep(0.25, nlevel)
-    ytilde <- 4*y - 4*exp(param)/sum(exp(param)) + param
+    ytilde <- y/vtilde2 - (exp(param)/sum(exp(param)))/vtilde2 + param
   }
   else {
     print(var.type)
