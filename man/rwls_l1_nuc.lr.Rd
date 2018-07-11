@@ -6,7 +6,8 @@
 \usage{
 rwls_l1_nuc.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
   upper = 12, lower = -12, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, offset = F, scale = F, max.rank = 20, vt2 = NULL)
+  trace.it = F, offset = F, scale = F, max.rank = 20, vt2 = NULL,
+  wmax = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}

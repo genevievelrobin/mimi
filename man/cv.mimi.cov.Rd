@@ -63,6 +63,7 @@ A list containing the following elements
 cv.cov
 }
 \examples{
+\dontrun{
 n = 6; p = 2
 y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
@@ -75,4 +76,5 @@ idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 y[idx_NA] <- NA
 x <- matrix(rnorm(6*6*2), nrow = 6*6)
 res <- cv.mimi.cov(y, x, var.type = var.type, maxit = 2, nb.boot = 2, thresh =1)
+}
 }

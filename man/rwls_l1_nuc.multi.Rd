@@ -2,12 +2,12 @@
 % Please edit documentation in R/rwls_l1_nuc.multi.R
 \name{rwls_l1_nuc.multi}
 \alias{rwls_l1_nuc.multi}
-\title{rwls_l1_nuc}
+\title{rwls_l1_nuc.multi}
 \usage{
 rwls_l1_nuc.multi(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
   maxit = 100, upper = 12, lower = -12, mu0 = NULL, alpha0 = NULL,
   theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F, scale = F,
-  max.rank = 5, vt2 = NULL)
+  max.rank = 5, vt2 = NULL, wmax = NULL)
 }
 \arguments{
 \item{y}{observation matrix}
@@ -57,7 +57,7 @@ A list vith the following elements
 \item{objective}{a vector containing the value of the objective function at every iteration}
 }
 \description{
-rwls_l1_nuc
+rwls_l1_nuc.multi
 }
 \examples{
 n = 6; p = 2

@@ -63,10 +63,12 @@ A list containing the following elements
 cv.mimi.multi
 }
 \examples{
+\dontrun{
 y <- matrix(rnorm(4 * 3), nrow = 4)
 y[sample(1:12, size = 3)] <- NA
 groups <- c(1,1,2,2)
 groups <- as.factor(groups)
 vt <- rep("gaussian", 3)
 res <- cv.mimi.multi(y, groups, 2, var.type = vt, maxit = 1, size.grid = 2, thresh = 1)
+}
 }

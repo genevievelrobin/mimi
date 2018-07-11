@@ -7,9 +7,9 @@ Compute solution of mimi with group effects along regularization path}
 \usage{
 mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL,
-  theta0 = NULL, thresh = 1e-04, trace.it = F, lambda1.max = NULL,
+  theta0 = NULL, thresh = 1e-05, trace.it = F, lambda1.max = NULL,
   lambda2.max = NULL, length = 20, upper = 12, lower = -12,
-  offset = F, scale = F, max.rank = 20)
+  offset = F, scale = F, max.rank = 20, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}

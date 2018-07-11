@@ -4,7 +4,7 @@
 \alias{quad_approx}
 \title{quad_approx}
 \usage{
-quad_approx(y, param, var.type, nlevel)
+quad_approx(y, param, var.type, nlevel, wmax)
 }
 \arguments{
 \item{y}{observation matrix (nxP) - extended with dummies for cat variables}

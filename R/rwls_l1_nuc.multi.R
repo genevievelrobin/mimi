@@ -165,6 +165,7 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
   y <- matrix(as.numeric(y), nrow = n)
   groups <- as.factor(groups)
   N <- nlevels(groups)
+  ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
   if(is.null(mu0)) mu0 <-0
   if(is.null(alpha0)) {
     alpha0 <- rep(0, N * p)

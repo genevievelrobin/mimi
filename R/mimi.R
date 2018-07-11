@@ -384,6 +384,7 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
       y[, which(var.type == "categorical")[j]] <- as.factor(y[, which(var.type == "categorical")[j]])
     }
     tab <- tab.disjonctif.prop(y[, var.type == "categorical"])
+    tab[((tab>0)*(tab<1) == 1)] <- NA
     nlevel[var.type == "categorical"] <- sapply(which(var.type == "categorical"), function(t) nlevels(y[, t]))
     colnames(tab) <- paste(rep(colnames(y[, var.type == "categorical"]), nlevel[var.type == "categorical"])
                            ,".", c(sapply(nlevel[var.type == "categorical"], function(k) 1:k)), sep = "")
@@ -395,16 +396,11 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
       if(!(var.type[j]=="categorical")){
         y2 <- cbind(y2, y[j])
         vt2 <- c(vt2, var.type[j])
-        x2 <- rbind(x2, x[(1+j-1):(j+n-1), ])
       } else{
         y2 <- cbind(y2, tab[, count:(count + nlevels(y[, j]) -1)])
         vt2 <- c(vt2, rep("categorical", nlevels(y[, j])))
-        for(i in 1:nlevels(y[, j])){
-          x2 <- rbind(x2, x[(1+j-1):(j+n-1), ])
-        }
       }
     }
-    x <- x2[2:nrow(x2), ]
     y <- y2[, 2:ncol(y2)]
   }
   y <- as.matrix(y)

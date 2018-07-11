@@ -4,7 +4,7 @@
 \alias{wght}
 \title{wght}
 \usage{
-wght(y, param, var.type, nlevel = NULL)
+wght(y, param, var.type, nlevel = NULL, wmax)
 }
 \arguments{
 \item{y}{real number: observation}

@@ -71,6 +71,7 @@ cv.mimi
 Perform cross-validation for mimi model with covariates/groups along regularization path
 }
 \examples{
+\dontrun{
 n = 4; p = 1
 y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
 y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
@@ -83,4 +84,5 @@ idx_NA <- sample(1:(3 * n * p), size = round(0.05 * 3 * n * p))
 y[idx_NA] <- NA
 x <- matrix(rnorm(4*3*2), nrow = 4*3)
 res <- cv.mimi(y, "cov", x, var.type = var.type, thresh = 1, nb.boot = 2, size.grid = 2)
+}
 }

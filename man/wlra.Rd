@@ -4,7 +4,7 @@
 \alias{wlra}
 \title{wlra}
 \usage{
-wlra(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-06, maxit = 1000,
+wlra(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-05, maxit = 100,
   rank.max = NULL)
 }
 \arguments{
