@@ -47,7 +47,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
                  var.type = c("gaussian", "binary", "categorical", "poisson"),
                  lambda1, lambda2, maxit = 100,
                  mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                 thresh = 1e-4, trace.it = F, lambda1.max = NULL,
+                 thresh = 1e-6, trace.it = F, lambda1.max = NULL,
                  lambda2.max = NULL, length = 20, upper = 12,
                  lower = -12,  offset = F, scale = F, max.rank = 20, wmax = NULL)
 {
@@ -402,7 +402,7 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
       }
     }
     y <- y2[, 2:ncol(y2)]
-  }
+  } else vt2 <- var.type
   y <- as.matrix(y)
   d <- dim(y)
   n <- d[1]

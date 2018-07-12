@@ -51,7 +51,7 @@
 cv.mimi <- function(y, model = c("groups", "covariates"), x = NULL, groups = NULL, var.type,
                     lambda1.min = NULL, lambda2.min = NULL, lambda1.max = NULL,
                     lambda2.max = NULL, maxit = 100, mu0 = NULL, alpha0 = NULL,
-                    theta0 = NULL, thresh = 1e-4, trace.it = F, length = 20, offset = F,
+                    theta0 = NULL, thresh = 1e-6, trace.it = F, length = 20, offset = F,
                     nb.boot = 10, prob = 0.1, size.grid = 20, max.rank = 20, scale = F)
 {
   if(model == "groups"){
@@ -183,7 +183,7 @@ cv.mimi.multi <- function(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-4, ma
   lambda2.cv <- exp(lambda2.grid.log)[idx[2]]
   estim.cv <- mimi.multi(y, groups = groups, lambda1 = lambda1.cv, lambda2 = lambda2.cv,
                          var.type = var.type, trace.it = trace.it, length = length,
-                         thresh = thresh, maxit = maxit)
+                         thresh = thresh, maxit = maxit, offset = offset)
   return(list(lambda1 = exp(lambda1.cv), lambda2 = exp(lambda2.cv), estim.cv = estim.cv,
               lambda1.grid = exp(lambda1.grid.log), lambda2.grid = exp(lambda2.grid.log)))
 
@@ -302,7 +302,8 @@ cv.mimi.cov <- function(y, x, nb.boot = 5, prob = 0.1, thresh = 1e-4, maxit = 10
   lambda1.cv <- exp(lambda1.grid.log)[idx[1]]
   lambda2.cv <- exp(lambda2.grid.log)[idx[2]]
   estim.cv <- mimi.cov(y, x, lambda1 = lambda1.cv, lambda2 = lambda2.cv,
-                       var.type = var.type, trace.it = T, length = length, thresh = thresh)
+                       var.type = var.type, trace.it = trace.it, length = length,
+                       thresh = thresh, offset = offset, scale = scale, max.rank = max.rank)
   return(list(lambda1 = lambda1.cv, lambda2 = lambda2.cv, estim.cv = estim.cv, error = error,
               lambda1.grid = exp(lambda1.grid.log), lambda2.grid = exp(lambda2.grid.log)))
 

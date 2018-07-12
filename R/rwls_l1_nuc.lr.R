@@ -110,6 +110,7 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     } else {
       theta <- u%*%diag(d)%*%t(v)
     }
+    if(sum(var.type == "categorical")) theta[, vt2 == "categorical"] <- sweep(theta[, vt2 == "categorical"], 1, rowMeans(theta[, vt2 == "categorical"]))
     theta[theta > upper] <- upper
     theta[theta < lower] <- lower
     param <- theta
@@ -150,8 +151,23 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
   }
   if(error < thresh) cvg = T else cvg = F
   y <- theta
-  y[, var.type == "poisson"] <- exp(y[, var.type == "poisson"])
-  y[, var.type == "binary"] <- exp(y[, var.type == "binary"])/(1+exp(y[, var.type == "binary"]))
+  y[, vt2 == "poisson"] <- exp(y[, vt2 == "poisson"])
+  y[, vt2 == "binary"] <- exp(y[, vt2 == "binary"])/(1+exp(y[, vt2 == "binary"]))
+  if(sum(var.type == "categorical")>0){
+    for(j in 1:sum(var.type == "categorical")){
+      count <- sum(nlevel[1:(which(var.type == "categorical")[j]-1)])
+      y[, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])] <- t(sapply(1:n, function(i) exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])/sum(exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])]))))
+      }
+  }
+  # y[, vt2 == "gaussian"] <- matrix(rnorm(mean = c(y[, vt2 == "gaussian"]), sd = 1, length(y[, vt2 == "gaussian"])), nrow = n)
+  # y[, vt2 == "poisson"] <- matrix(rpois(length(y[, vt2 == "poisson"]), lambda = c(exp(y[, vt2 == "poisson"]))), nrow = n)
+  # y[, vt2 == "binary"] <- matrix(rbinom(length(y[, vt2 == "binary"]), prob = c(exp(y[, vt2 == "binary"])/(1+exp(y[, vt2 == "binary"]))), size = 1), nrow = n)
+  # if(sum(var.type == "categorical")>0){
+  #   for(j in 1:sum(var.type == "categorical")){
+  #     count <- sum(nlevel[1:(which(var.type == "categorical")[j]-1)])
+  #     y[, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])] <- t(sapply(1:n, function(i) rmultinom(1, 1, exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])/sum(exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])))))
+  #   }
+  # }
   y.imputed <- y0
   y.imputed[is.na(y.imputed)] <- y[is.na(y.imputed)]
   return(list(y = y0, theta = theta, objective = objective, y.imputed = y.imputed))
