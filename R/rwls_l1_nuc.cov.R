@@ -232,7 +232,7 @@ rwls_l1_nuc.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, max
     alpha.mat <- matrix(matrix(as.numeric(x), nrow = n*p)%*%alpha, nrow = n)
     param <- mu + alpha.mat + theta
     res <- bls.cov(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-               b = 0.5, lambda1, lambda2, var.type, thresh)
+               b = 0.5, lambda1, lambda2, var.type, thresh, sc = sc)
     mu <- res$mu
     alpha <- res$alpha
     theta <- res$theta

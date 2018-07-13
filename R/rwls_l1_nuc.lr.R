@@ -63,8 +63,7 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     p3 <- sum(var.type == "poisson")
     p4 <- sum(var.type == "categorical")
     if(p1>0){
-      scaling[vt2 == "gaussian"] <- 0.5*colSums((y[, vt2 == "gaussian"] - t(matrix(rep(moy[vt2 == "gaussian"],
-                                                                                       n), nrow = p1)))^2,na.rm = T)/(n-1)
+      scaling[vt2 == "gaussian"] <- apply(y, 2, sd, na.rm = T)^2
     }
     if(p2>0){
       scaling[vt2 == "binary"] <- colSums(- (y[, vt2 == "binary"] * t(matrix(rep(moy[vt2 == "binary"],
@@ -95,13 +94,13 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     yv <- quad_approx(y0, param, var.type, nlevel, wmax)
     ytilde <- yv$ytilde
     vtilde2 <- yv$vtilde2
-    lambda1w <- lambda1 / (max(vtilde2))
-    vtilde2 <- vtilde2 / max(vtilde2)
     if(scale==T){
       vtilde2 <- sweep(vtilde2, 2, scaling, "/")
     }
+    lambda1w <- lambda1 / max(vtilde2)
+    vtilde2 <- vtilde2 / max(vtilde2)
     svd_theta <- wlra(x = ytilde, w = vtilde2, lambda = lambda1w, x0 = NULL, thresh = thresh,
-                      rank.max = max.rank)
+                      rank.max = max.rank, maxit = 1e3)
     u <- svd_theta$u
     d <- svd_theta$d
     v <- svd_theta$v
@@ -113,8 +112,7 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     if(sum(var.type == "categorical")) theta[, vt2 == "categorical"] <- sweep(theta[, vt2 == "categorical"], 1, rowMeans(theta[, vt2 == "categorical"]))
     theta[theta > upper] <- upper
     theta[theta < lower] <- lower
-    param <- theta
-    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh)
+    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh, sc = sc)
     theta <- res$theta
     param <- theta
     gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,

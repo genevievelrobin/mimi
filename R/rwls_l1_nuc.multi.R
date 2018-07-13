@@ -252,7 +252,7 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
     alpha.rep <- matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
     param <- mu + alpha.rep + theta
     res <- bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                     b = 0.5, lambda1, lambda2, var.type, thresh)
+                     b = 0.5, lambda1, lambda2, var.type, thresh, sc = sc)
     mu <- res$mu
     alpha <- res$alpha
     theta <- res$theta

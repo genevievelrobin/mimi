@@ -130,6 +130,13 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
   yy <- y
   nlevel = rep(1, ncol(y))
   n <- nrow(y)
+  if(sum(var.type == "binary")>0){
+    for(j in 1:sum(var.type == "binary")){
+      y <- data.frame(y)
+      y[, which(var.type == "binary")[j]] <- as.factor(y[, which(var.type == "binary")[j]])
+      y[, which(var.type == "binary")[j]] <- sapply(as.character(y[, which(var.type == "binary")[j]]), function(t) if (t%in%c(levels(y[, which(var.type == "binary")[j]])[1])) 1 else if(is.na(t)) NA else 0)
+    }
+  }
   if(sum(var.type == "categorical")>0){
     y <- data.frame(y)
     for(j in 1:sum(var.type == "categorical")){
@@ -259,8 +266,9 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   nlevel = rep(1, ncol(y))
   if(sum(var.type == "binary")>0){
     for(j in 1:sum(var.type == "binary")){
+      y <- data.frame(y)
       y[, which(var.type == "binary")[j]] <- as.factor(y[, which(var.type == "binary")[j]])
-      y[, which(var.type == "binary")[j]] <- sapply(as.character(y[, which(var.type == "binary")[j]]), function(t) if (t%in%c(levels(y[1, which(var.type == "binary")[j]])[1])) 1 else if(is.na(t)) NA else 0)
+      y[, which(var.type == "binary")[j]] <- sapply(as.character(y[, which(var.type == "binary")[j]]), function(t) if (t%in%c(levels(y[, which(var.type == "binary")[j]])[1])) 1 else if(is.na(t)) NA else 0)
     }
   }
   if(sum(var.type == "categorical")>0){
@@ -378,6 +386,13 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
 {
   yy <- y
   nlevel = rep(1, ncol(y))
+  if(sum(var.type == "binary")>0){
+    for(j in 1:sum(var.type == "binary")){
+      y <- data.frame(y)
+      y[, which(var.type == "binary")[j]] <- as.factor(y[, which(var.type == "binary")[j]])
+      y[, which(var.type == "binary")[j]] <- sapply(as.character(y[, which(var.type == "binary")[j]]), function(t) if (t%in%c(levels(y[, which(var.type == "binary")[j]])[1])) 1 else if(is.na(t)) NA else 0)
+    }
+  }
   if(sum(var.type == "categorical")>0){
     y <- data.frame(y)
     for(j in 1:sum(var.type == "categorical")){
