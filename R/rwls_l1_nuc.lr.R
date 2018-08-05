@@ -37,8 +37,8 @@
 #' nl <- rep(1, 6)
 #' res <- rwls_l1_nuc.lr(y, var.type, 0.1, nl)
 rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upper = 12,
-                            lower = -12, theta0 = NULL, thresh = 1e-5, trace.it = F,
-                            offset = F, scale = F, max.rank = 20, vt2 = NULL, wmax = NULL){
+                           lower = -12, theta0 = NULL, thresh = 1e-5, trace.it = F,
+                           offset = F, scale = F, max.rank = 20, vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
   p <- d[2]
@@ -52,41 +52,6 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
   y0 <- y
   error <- 1
   iter <- 0
-  if(scale == T){
-    moy <- colMeans(y, na.rm = T)
-    moy[vt2 == "binary"] <- log(moy[vt2 == "binary"]/(1-moy[vt2 == "binary"]))
-    moy[vt2 == "poisson"] <- log(moy[vt2 == "poisson"])
-    moy[vt2 == "categorical"] <- log(moy[vt2 == "categorical"]/(1-moy[vt2 == "categorical"]))
-    scaling <- rep(0, p)
-    p1 <- sum(var.type == "gaussian")
-    p2 <- sum(var.type == "binary")
-    p3 <- sum(var.type == "poisson")
-    p4 <- sum(var.type == "categorical")
-    if(p1>0){
-      scaling[vt2 == "gaussian"] <- apply(y, 2, sd, na.rm = T)^2
-    }
-    if(p2>0){
-      scaling[vt2 == "binary"] <- colSums(- (y[, vt2 == "binary"] * t(matrix(rep(moy[vt2 == "binary"],
-                                                                                 n), nrow = p2))) +
-                                            log(1 + exp(t(matrix(rep(moy[vt2 == "binary"],
-                                                                     n), nrow = p2)))),na.rm = T)/(n-1)
-
-    }
-    if(p3>0){
-      scaling[vt2 == "poisson"] <- colSums(- (y[, vt2 == "poisson"] * t(matrix(rep(moy[vt2 == "poisson"],
-                                                                                   n), nrow = p3))) +
-                                             exp(t(matrix(rep(moy[vt2 == "poisson"],n), nrow = p3))) + log_factorial(y[, vt2 == "poisson"]),na.rm = T)/(n-1)
-
-    }
-    if(p4>0){
-      scaling[vt2 == "categorical"] <- colSums(- (y[, vt2 == "categorical"] * t(matrix(rep(moy[vt2 == "categorical"],
-                                                                                           n), nrow = sum(vt2 == "categorical")))) +
-                                                 log(1 + exp(t(matrix(rep(moy[vt2 == "categorical"],
-                                                                          n), nrow = sum(vt2 == "categorical"))))),na.rm = T)/(n-1)
-
-    }
-  } else scaling <- rep(1, ncol(y))
-  sc <- matrix(rep(scaling, n), nrow = n, byrow = T)
   while((error > thresh) && (iter < maxit)){
     iter <- iter + 1
     theta.tmp <- theta
@@ -95,12 +60,13 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     ytilde <- yv$ytilde
     vtilde2 <- yv$vtilde2
     if(scale==T){
-      vtilde2 <- sweep(vtilde2, 2, scaling, "/")
+      scaling <- apply(ytilde, 2, sd, na.rm = T)
+      ytilde <- sweep(ytilde, 2, scaling, "/")
     }
     lambda1w <- lambda1 / max(vtilde2)
     vtilde2 <- vtilde2 / max(vtilde2)
-    svd_theta <- wlra(x = ytilde, w = vtilde2, lambda = lambda1w, x0 = NULL, thresh = thresh,
-                      rank.max = max.rank, maxit = 1e3)
+    svd_theta <- wlra(x = ytilde, w = vtilde2, lambda = lambda1w, x0 = NULL, thresh = 0.1*thresh,
+                      rank.max = max.rank, maxit = 100)
     u <- svd_theta$u
     d <- svd_theta$d
     v <- svd_theta$v
@@ -112,28 +78,30 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     if(sum(var.type == "categorical")) theta[, vt2 == "categorical"] <- sweep(theta[, vt2 == "categorical"], 1, rowMeans(theta[, vt2 == "categorical"]))
     theta[theta > upper] <- upper
     theta[theta < lower] <- lower
-    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh, sc = sc)
+    if(scale) theta <- sweep(theta, 2, scaling, "*")
+    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh)
     theta <- res$theta
     param <- theta
-    gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+    #obj <- sum(vtilde2*(ytilde-sweep(theta, 2, scaling, "/"))^2, na.rm =T) + lambda1w*sum(svd(sweep(theta, 2, scaling, "/"))$d)
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - theta[, var.type == "gaussian"])^2,
                           na.rm = T)
-    pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
-                                               exp(param[, var.type == "poisson"])), na.rm = T)
-    binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
-                                               log(1 + exp(param[, var.type == "binary"]))), na.rm = T)
+    pois <- sum((- (y0[, var.type == "poisson"] * theta[, var.type == "poisson"]) +
+                   exp(theta[, var.type == "poisson"])), na.rm = T)
+    binom <- sum((- (y0[, var.type == "binary"] * theta[, var.type == "binary"]) +
+                    log(1 + exp(theta[, var.type == "binary"]))), na.rm = T)
     truc <- rep(0, n)
     if(sum(var.type=="categorical")>0){
       for(j in 1:sum(var.type=="categorical")){
-        tt <- rowSums(exp(param[, which(var.type=="categorical")[j]:(which(var.type=="categorical")[j]+nlevel[which(var.type=="categorical")[j]]-1)]))
-        truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
+        tt <- rowSums(exp(theta[, which(var.type=="categorical")[j]:(which(var.type=="categorical")[j]+nlevel[which(var.type=="categorical")[j]]-1)]))
+        truc <- cbind(truc, matrix(rep(theta, nlevel[which(var.type=="categorical")[j]]), nrow = n))
       }
       truc <- truc[, 2:ncol(truc)]
-      cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
-                                                  log(truc))), na.rm = T)
+      cat <- sum((- (y0[, vt2 == "categorical"] * (theta[, vt2 == "categorical"]) -
+                       log(truc))), na.rm = T)
     } else cat <- 0
     d <- svd(theta)$d
     objective <- c(objective, min(.Machine$double.xmax, (pois + gaus + binom + cat + lambda1 * sum(d))))
-
+    #objective <- c(objective, min(.Machine$double.xmax, obj))
     if(iter == 1) {
       error <- 1
     } else{
@@ -155,17 +123,8 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     for(j in 1:sum(var.type == "categorical")){
       count <- sum(nlevel[1:(which(var.type == "categorical")[j]-1)])
       y[, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])] <- t(sapply(1:n, function(i) exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])/sum(exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])]))))
-      }
+    }
   }
-  # y[, vt2 == "gaussian"] <- matrix(rnorm(mean = c(y[, vt2 == "gaussian"]), sd = 1, length(y[, vt2 == "gaussian"])), nrow = n)
-  # y[, vt2 == "poisson"] <- matrix(rpois(length(y[, vt2 == "poisson"]), lambda = c(exp(y[, vt2 == "poisson"]))), nrow = n)
-  # y[, vt2 == "binary"] <- matrix(rbinom(length(y[, vt2 == "binary"]), prob = c(exp(y[, vt2 == "binary"])/(1+exp(y[, vt2 == "binary"]))), size = 1), nrow = n)
-  # if(sum(var.type == "categorical")>0){
-  #   for(j in 1:sum(var.type == "categorical")){
-  #     count <- sum(nlevel[1:(which(var.type == "categorical")[j]-1)])
-  #     y[, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])] <- t(sapply(1:n, function(i) rmultinom(1, 1, exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])/sum(exp(y[i, (count+1):(count+nlevel[which(vt2 == "categorical")[j]])])))))
-  #   }
-  # }
   y.imputed <- y0
   y.imputed[is.na(y.imputed)] <- y[is.na(y.imputed)]
   return(list(y = y0, theta = theta, objective = objective, y.imputed = y.imputed))

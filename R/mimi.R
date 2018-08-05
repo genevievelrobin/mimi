@@ -45,8 +45,7 @@
 #' res <- mimi(y, model = "covariates", x = x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
 mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, groups = NULL,
                  var.type = c("gaussian", "binary", "categorical", "poisson"),
-                 lambda1, lambda2, maxit = 100,
-                 mu0 = NULL, alpha0 = NULL, theta0 = NULL,
+                 lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                  thresh = 1e-6, trace.it = F, lambda1.max = NULL,
                  lambda2.max = NULL, length = 20, upper = 12,
                  lower = -12,  offset = F, scale = F, max.rank = 20, wmax = NULL)
@@ -435,7 +434,7 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
   list.theta <- list()
   list.theta[[1]] <- theta0
   list.res <- list()
-  list.res[[1]] <- theta0
+  list.res[[1]] <- list(y = y, theta = theta0, objective = 0, y.imputed = apply(y, c(1,2), function(xx){if(is.na(xx)) 0 else xx}))
   for(i in 2:length){
     res <- rwls_l1_nuc.lr(y, var.type = var.type, nlevel = nlevel, lambda1 = exp(lambda1.grid.log[i]),
                           maxit = maxit, upper = upper, lower = lower,
