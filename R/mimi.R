@@ -48,7 +48,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
                  lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                  thresh = 1e-6, trace.it = F, lambda1.max = NULL,
                  lambda2.max = NULL, length = 20, upper = 12,
-                 lower = -12,  offset = F, scale = F, max.rank = 20, wmax = NULL)
+                 lower = -12,  offset = T, scale = T, max.rank = 20, wmax = NULL)
 {
   if(model == "groups"){
     return (mimi.multi(y = y, groups = groups, var.type = var.type, lambda1 = lambda1,

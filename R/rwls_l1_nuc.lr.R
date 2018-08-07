@@ -36,8 +36,8 @@
 #' y[idx_NA] <- NA
 #' nl <- rep(1, 6)
 #' res <- rwls_l1_nuc.lr(y, var.type, 0.1, nl)
-rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upper = 12,
-                           lower = -12, theta0 = NULL, thresh = 1e-5, trace.it = F,
+rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upper = NULL,
+                           lower = NULL, theta0 = NULL, thresh = 1e-5, trace.it = F,
                            offset = F, scale = F, max.rank = 20, vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
@@ -45,6 +45,8 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
   omega <- !is.na(y)
+  if(is.null(upper)) upper <- 2*max(abs(y), na.rm = T)
+  if(is.null(lower)) lower <- -2*max(abs(y), na.rm = T)
   if(is.null(theta0)) theta0 <- matrix(rep(0, n * p), nrow = n)
   theta <- theta0
   param <- theta
@@ -60,13 +62,13 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
     ytilde <- yv$ytilde
     vtilde2 <- yv$vtilde2
     if(scale==T){
-      scaling <- apply(ytilde, 2, sd, na.rm = T)
+      scaling <- apply(y, 2, sd, na.rm = T)
       ytilde <- sweep(ytilde, 2, scaling, "/")
     }
     lambda1w <- lambda1 / max(vtilde2)
     vtilde2 <- vtilde2 / max(vtilde2)
     svd_theta <- wlra(x = ytilde, w = vtilde2, lambda = lambda1w, x0 = NULL, thresh = 0.1*thresh,
-                      rank.max = max.rank, maxit = 100)
+                      rank.max = max.rank, maxit = 1e3)
     u <- svd_theta$u
     d <- svd_theta$d
     v <- svd_theta$v
@@ -76,32 +78,13 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upp
       theta <- u%*%diag(d)%*%t(v)
     }
     if(sum(var.type == "categorical")) theta[, vt2 == "categorical"] <- sweep(theta[, vt2 == "categorical"], 1, rowMeans(theta[, vt2 == "categorical"]))
-    theta[theta > upper] <- upper
-    theta[theta < lower] <- lower
-    if(scale) theta <- sweep(theta, 2, scaling, "*")
+    if(scale) {
+      theta <- sweep(theta, 2, scaling, "*")
+    }
     res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh)
     theta <- res$theta
     param <- theta
-    #obj <- sum(vtilde2*(ytilde-sweep(theta, 2, scaling, "/"))^2, na.rm =T) + lambda1w*sum(svd(sweep(theta, 2, scaling, "/"))$d)
-    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - theta[, var.type == "gaussian"])^2,
-                          na.rm = T)
-    pois <- sum((- (y0[, var.type == "poisson"] * theta[, var.type == "poisson"]) +
-                   exp(theta[, var.type == "poisson"])), na.rm = T)
-    binom <- sum((- (y0[, var.type == "binary"] * theta[, var.type == "binary"]) +
-                    log(1 + exp(theta[, var.type == "binary"]))), na.rm = T)
-    truc <- rep(0, n)
-    if(sum(var.type=="categorical")>0){
-      for(j in 1:sum(var.type=="categorical")){
-        tt <- rowSums(exp(theta[, which(var.type=="categorical")[j]:(which(var.type=="categorical")[j]+nlevel[which(var.type=="categorical")[j]]-1)]))
-        truc <- cbind(truc, matrix(rep(theta, nlevel[which(var.type=="categorical")[j]]), nrow = n))
-      }
-      truc <- truc[, 2:ncol(truc)]
-      cat <- sum((- (y0[, vt2 == "categorical"] * (theta[, vt2 == "categorical"]) -
-                       log(truc))), na.rm = T)
-    } else cat <- 0
-    d <- svd(theta)$d
-    objective <- c(objective, min(.Machine$double.xmax, (pois + gaus + binom + cat + lambda1 * sum(d))))
-    #objective <- c(objective, min(.Machine$double.xmax, obj))
+    objective <- c(objective, min(.Machine$double.xmax, res$objective))
     if(iter == 1) {
       error <- 1
     } else{

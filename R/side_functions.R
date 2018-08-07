@@ -224,9 +224,9 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
   param.tmp <- mu.tmp + alpha.tmp.mat + theta.tmp
   gaus.tmp <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
                             na.rm = T)
-  pois.tmp <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
+  pois.tmp <- sum((- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
                                                  exp(param.tmp[, var.type == "poisson"])), na.rm = T)
-  binom.tmp <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
+  binom.tmp <- sum((- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
                                                  log(1 + exp(param.tmp[, var.type == "binary"]))), na.rm = T)
   truc <- rep(0, n)
   if(sum(var.type=="categorical")>0){
@@ -235,15 +235,15 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
       truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
     }
     truc <- truc[, 2:ncol(truc)]
-    cat.tmp <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param.tmp[, vt2 == "categorical"]) -
+    cat.tmp <- sum((- (y0[, vt2 == "categorical"] * (param.tmp[, vt2 == "categorical"]) -
                                                     log(truc))), na.rm = T)
   } else cat.tmp <- 0
   d.tmp <- svd(theta.tmp)$d
-  gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
                         na.rm = T)
-  pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+  pois <- sum((- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
                                              exp(param2[, var.type == "poisson"])), na.rm = T)
-  binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+  binom <- sum((- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
                                              log(1 + exp(param2[, var.type == "binary"]))), na.rm = T)
   truc <- rep(0, n)
   if(sum(var.type=="categorical")>0){
@@ -252,7 +252,7 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
       truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
     }
     truc <- truc[, 2:ncol(truc)]
-    cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
+    cat <- sum((- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
                                                 log(truc))), na.rm = T)
   } else cat <- 0
   d <- svd(theta)$d
@@ -269,11 +269,11 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
     alpha2 <- (1-t)*alpha.tmp + t*alpha
     theta2 <- (1-t)*theta.tmp + t*theta
     param2 <- (1-t)*param.tmp + t*param
-    gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
                           na.rm = T)
-    pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+    pois <- sum((- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
                                                exp(param2[, var.type == "poisson"])), na.rm = T)
-    binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+    binom <- sum((- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
                                                log(1 + exp(param2[, var.type == "binary"]))), na.rm = T)
     truc <- rep(0, n)
     if(sum(var.type=="categorical")>0){
@@ -282,7 +282,7 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
         truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
       }
       truc <- truc[, 2:ncol(truc)]
-      cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
+      cat <- sum((- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
                                                   log(truc))), na.rm = T)
     } else cat <- 0
     d <- svd(theta2)$d
@@ -329,8 +329,7 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 #' gps <- as.factor(c(1,1,2,2,3,3))
 #' bls <- bls.multi(y0, gps, m, a, t, mt, at, tt, 1, 1, v)
 bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                      lambda1, lambda2, var.type, thresh = 1e-5, b = 0.5, sc){
-  #thresh = 0
+                      lambda1, lambda2, var.type, thresh = 1e-5, b = 0.5){
   d <- dim(y0)
   n <- d[1]
   p <- d[2]
@@ -338,17 +337,16 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
   N <- nlevels(groups)
   omega <- !is.na(y0)
   ncenters <- aggregate(rep(1, n), by = list(groups), sum)[,2]
-
   alpha.rep <- matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
   alpha.tmp.rep <- matrix(rep(as.matrix(alpha.tmp), rep(ncenters, p)), nrow = n)
   param <- mu + alpha.rep + theta
   param.tmp <- mu.tmp + alpha.tmp.rep + theta.tmp
-  gaus.tmp <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
+  gaus.tmp <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param.tmp[, var.type == "gaussian"])^2,
                             na.rm = T)
-  pois.tmp <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"]) +
-                                                 exp(param.tmp[, var.type == "poisson"])), na.rm = T)
-  binom.tmp <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param.tmp[, var.type == "binary"]) +
-                                                 log(1 + exp(param.tmp[, var.type == "binary"]))), na.rm = T)
+  pois.tmp <- sum(- y0[, var.type == "poisson"] * param.tmp[, var.type == "poisson"] +
+                                                 exp(param.tmp[, var.type == "poisson"]), na.rm = T)
+  binom.tmp <- sum(- y0[, var.type == "binary"] * param.tmp[, var.type == "binary"] +
+                                                 log(1 + exp(param.tmp[, var.type == "binary"])), na.rm = T)
   truc <- rep(0, n)
   if(sum(var.type=="categorical")>0){
     for(j in 1:sum(var.type=="categorical")){
@@ -356,16 +354,16 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
       truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
     }
     truc <- truc[, 2:ncol(truc)]
-    cat.tmp <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param.tmp[, vt2 == "categorical"]) -
-                                                    log(truc))), na.rm = T)
+    cat.tmp <- sum(- (y0[, vt2 == "categorical"] * (param.tmp[, vt2 == "categorical"]) -
+                                                    log(truc)), na.rm = T)
   } else cat.tmp <- 0
   d.tmp <- svd(theta.tmp)$d
-  gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
                         na.rm = T)
-  pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
-                                             exp(param[, var.type == "poisson"])), na.rm = T)
-  binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
-                                             log(1 + exp(param[, var.type == "binary"]))), na.rm = T)
+  pois <- sum(-y0[, var.type == "poisson"]*param[, var.type == "poisson"] +
+                                             exp(param[, var.type == "poisson"]), na.rm = T)
+  binom <- sum(-y0[, var.type == "binary"]*param[, var.type == "binary"] +
+                                             log(1 + exp(param[, var.type == "binary"])), na.rm = T)
 
   truc <- rep(0, n)
   if(sum(var.type=="categorical")>0){
@@ -374,7 +372,7 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
       truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
     }
     truc <- truc[, 2:ncol(truc)]
-    cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
+    cat <- sum((- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
                                                 log(truc))), na.rm = T)
   } else cat <- 0
   d <- svd(theta)$d
@@ -385,17 +383,17 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
   param2 <- (1-t)*param.tmp + t*param
   diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d)) + sum(lambda2 * (t(abs(alpha.tmp)) - t(abs(alpha))))
   number <- gaus.tmp + pois.tmp + binom.tmp + lambda1 * sum(d.tmp) + sum(lambda2 * (t(abs(alpha.tmp))))
-  while(diff < -abs(number)*thresh){
+  while(diff < -abs(number)*thresh/2){
     t <- b*t
     mu2 <- (1-t)*mu.tmp + t*mu
     alpha2 <- (1-t)*alpha.tmp + t*alpha
     theta2 <- (1-t)*theta.tmp + t*theta
     param2 <- (1-t)*param.tmp + t*param
-    gaus <- (1 / 2) * sum(sc[, var.type == "gaussian"]*(y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+    gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
                           na.rm = T)
-    pois <- sum(sc[, var.type == "poisson"]*(- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
+    pois <- sum((- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
                                                exp(param2[, var.type == "poisson"])), na.rm = T)
-    binom <- sum(sc[, var.type == "binary"]*(- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
+    binom <- sum((- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
                                                log(1 + exp(param2[, var.type == "binary"]))), na.rm = T)
     truc <- rep(0, n)
     if(sum(var.type=="categorical")>0){
@@ -404,7 +402,7 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
         truc <- cbind(truc, matrix(rep(tt, nlevel[which(var.type=="categorical")[j]]), nrow = n))
       }
       truc <- truc[, 2:ncol(truc)]
-      cat <- sum(sc[, vt2 == "categorical"]*(- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
+      cat <- sum((- (y0[, vt2 == "categorical"] * (param[, vt2 == "categorical"]) -
                                                   log(truc))), na.rm = T)
     } else cat <- 0
     d <- svd(theta2)$d
@@ -413,7 +411,6 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
   }
   obj <- pois + gaus + binom + lambda1*d + sum(lambda2 * t(abs(alpha2)))
   return(list(mu = mu2, alpha = alpha2, theta = theta2, objective = obj, t=t))
-
 }
 
 
@@ -486,7 +483,7 @@ bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e
   param2 <- (1-t)*param.tmp + t*param
   diff <- pois.tmp - pois + gaus.tmp - gaus + binom.tmp - binom + lambda1 * (sum(d.tmp) - sum(d))
   number <- gaus.tmp + pois.tmp + binom.tmp + lambda1 * sum(d.tmp)
-  while(diff < -abs(number)*thresh){
+  while(diff < -abs(number)*thresh/2){
     t <- b*t
     theta2 <- (1-t)*theta.tmp + t*theta
     param2 <- (1-t)*param.tmp + t*param
