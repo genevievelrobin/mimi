@@ -123,7 +123,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
                      lambda1, lambda2, maxit = 1e3, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                      thresh = 1e-4, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                     length = 20, upper = 12, lower = -12, offset = F, scale = F,
+                     length = 50, upper = 12, lower = -12, offset = T, scale = F,
                      max.rank = 20, wmax = NULL)
 {
   yy <- y
@@ -164,7 +164,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
     }
     x <- x2[2:nrow(x2), ]
     y <- y2[, 2:ncol(y2)]
-  }
+  } else vt2 <- var.type
   y <- as.matrix(y)
   if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
   d <- dim(y)
@@ -175,8 +175,8 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
   y <- matrix(as.numeric(y), nrow = n)
   omega <- !is.na(y)
   q <- ncol(x)
-  if(is.null(lambda2.max)) lambda2.max <- 1e3*lambda2
-  if(is.null(lambda1.max)) lambda1.max <- 1e3*lambda1
+  if(is.null(lambda2.max)) lambda2.max <- 1e4*lambda2
+  if(is.null(lambda1.max)) lambda1.max <- 1e4*lambda1
   lambda1.grid.log <- seq(log(lambda1.max), log(lambda1), length.out = length)
   lambda2.grid.log <- seq(log(lambda2.max), log(lambda2), length.out = length)
   if(is.null(mu0)) mu0 <-0
@@ -257,7 +257,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                        thresh = 1e-5, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                       length = 20, upper = 12, lower = -12, offset = F, scale = F, max.rank = 20,
+                       length = 20, upper = 12, lower = -12, offset = T, scale = T, max.rank = 20,
                        wmax = NULL)
 {
   yy <- y
@@ -381,7 +381,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, maxit = 100, theta0 = NULL, thresh = 1e-5,
                        trace.it = F, lambda1.max = NULL, length = 20, upper = 12, lower = -12,
-                       offset = F, scale = F, max.rank = 20, wmax = NULL)
+                       offset = T, scale = T, max.rank = 20, wmax = NULL)
 {
   yy <- y
   nlevel = rep(1, ncol(y))

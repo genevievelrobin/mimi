@@ -239,12 +239,12 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
                                                     log(truc))), na.rm = T)
   } else cat.tmp <- 0
   d.tmp <- svd(theta.tmp)$d
-  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param2[, var.type == "gaussian"])^2,
+  gaus <- (1 / 2) * sum((y0[, var.type == "gaussian"] - param[, var.type == "gaussian"])^2,
                         na.rm = T)
-  pois <- sum((- (y0[, var.type == "poisson"] * param2[, var.type == "poisson"]) +
-                                             exp(param2[, var.type == "poisson"])), na.rm = T)
-  binom <- sum((- (y0[, var.type == "binary"] * param2[, var.type == "binary"]) +
-                                             log(1 + exp(param2[, var.type == "binary"]))), na.rm = T)
+  pois <- sum((- (y0[, var.type == "poisson"] * param[, var.type == "poisson"]) +
+                                             exp(param[, var.type == "poisson"])), na.rm = T)
+  binom <- sum((- (y0[, var.type == "binary"] * param[, var.type == "binary"]) +
+                                             log(1 + exp(param[, var.type == "binary"]))), na.rm = T)
   truc <- rep(0, n)
   if(sum(var.type=="categorical")>0){
     for(j in 1:sum(var.type=="categorical")){
@@ -509,4 +509,17 @@ bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e
   obj <- pois + gaus + binom + lambda1*d
   return(list(theta = theta2, objective = obj, t=t))
 
+}
+
+
+covmat <- function(R, C){
+  dR <- dim(R)
+  dC <- dim(C)
+  n <- dR[1]
+  K1 <- dR[2]
+  p <- dC[1]
+  K2 <- dC[2]
+  covs <- as.matrix(data.frame(do.call(rbind, replicate(nrow(C), R, simplify=FALSE)),
+                               C[rep(seq_len(nrow(C)), each=nrow(R)),]))
+  rownames(covs) <-  c(outer(row.names(R), row.names(C), FUN=paste, sep = "-"))
 }
