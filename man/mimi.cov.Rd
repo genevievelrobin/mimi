@@ -5,11 +5,11 @@
 \title{mimi.cov
 Compute solution of mimi with covariates effects along regularization path}
 \usage{
-mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
-  lambda1, lambda2, maxit = 1000, mu0 = NULL, alpha0 = NULL,
-  theta0 = NULL, thresh = 1e-04, trace.it = F, lambda1.max = NULL,
-  lambda2.max = NULL, length = 20, upper = 12, lower = -12,
-  offset = F, scale = F, max.rank = 20, wmax = NULL)
+mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
+  "poisson"), lambda1, lambda2, maxit = 1000, mu0 = NULL,
+  alpha0 = NULL, theta0 = NULL, thresh = 1e-04, trace.it = F,
+  lambda1.max = NULL, lambda2.max = NULL, length = 50, offset = T,
+  scale = F, max.rank = 20, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -39,10 +39,6 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
 \item{lambda2.max}{positive number starting value of regularization parameter}
 
 \item{length}{length of the grid of regularization parameters}
-
-\item{upper}{real number upper bound on entries of alpha and theta}
-
-\item{lower}{real number lower bound on entries of alpha and theta}
 
 \item{offset}{boolean indicating whether or not an offset should be fitted}
 

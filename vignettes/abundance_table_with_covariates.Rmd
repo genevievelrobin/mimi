@@ -78,7 +78,6 @@ Now we can proceed to the estimation
 vt <- rep("poisson", ncol(aravo$spe)) # indicate the type of the columns of Y
 res <- mimi(aravo$spe, model = "covariates", x = X, var.type = vt,
             lambda1 = 5, lambda2 = 1e-2)
-
 df.alpha <- data.frame(var = c(colnames(aravo$env),
                                colnames(aravo$traits)),
                        alpha = res$list.alpha[[20]])

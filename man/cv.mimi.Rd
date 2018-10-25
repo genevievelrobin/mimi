@@ -5,12 +5,12 @@
 \title{cv.mimi
 Perform cross-validation for mimi model with covariates/groups along regularization path}
 \usage{
-cv.mimi(y, model = c("groups", "covariates"), x = NULL, groups = NULL,
-  var.type, lambda1.min = NULL, lambda2.min = NULL, lambda1.max = NULL,
-  lambda2.max = NULL, maxit = 100, mu0 = NULL, alpha0 = NULL,
-  theta0 = NULL, thresh = 1e-04, trace.it = F, length = 20,
-  offset = F, nb.boot = 10, prob = 0.1, size.grid = 20, max.rank = 20,
-  scale = F)
+cv.mimi(y, model = c("groups", "covariates"), x = NULL,
+  groups = NULL, var.type, lambda1.min = NULL, lambda2.min = NULL,
+  lambda1.max = NULL, lambda2.max = NULL, maxit = 100, mu0 = NULL,
+  alpha0 = NULL, theta0 = NULL, thresh = 1e-06, trace.it = F,
+  length = 20, offset = F, nb.boot = 10, prob = 0.1,
+  size.grid = 20, max.rank = 20, scale = F)
 }
 \arguments{
 \item{y}{nxp matrix of observations}

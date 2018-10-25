@@ -6,9 +6,9 @@
 \usage{
 cv.mimi.multi(y, groups, nb.boot = 10, prob = 0.1, thresh = 1e-04,
   maxit = 100, var.type, lambda1.max = NULL, lambda2.max = NULL,
-  lambda1.min = NULL, lambda2.min = NULL, size.grid = 20, length = 20,
-  mu0 = NULL, alpha0 = NULL, theta0 = NULL, trace.it = F, offset = F,
-  scale = F, max.rank = 20)
+  lambda1.min = NULL, lambda2.min = NULL, size.grid = 20,
+  length = 20, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
+  trace.it = F, offset = F, scale = F, max.rank = 20)
 }
 \arguments{
 \item{y}{nxp observations matrix}

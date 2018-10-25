@@ -5,9 +5,8 @@
 \title{rwls_l1_nuc.lr}
 \usage{
 rwls_l1_nuc.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
-  upper = 12, lower = -12, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, offset = F, scale = F, max.rank = 20, vt2 = NULL,
-  wmax = NULL)
+  theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F,
+  scale = F, max.rank = 20, vt2 = NULL, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -19,10 +18,6 @@ rwls_l1_nuc.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
 \item{nlevel}{vector of integers indicating the number of levels of each factor in y}
 
 \item{maxit}{integer, maximum number of iterations}
-
-\item{upper}{real number, upper bound on entries of theta}
-
-\item{lower}{real number, lower bound on entries of theta}
 
 \item{theta0}{matrix of size (nb of ind.)x(number of variables), initial value of the individual effect, default 0}
 

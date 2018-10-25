@@ -5,8 +5,8 @@
 \title{bls.multi
 Performs backtracking line search along a pre-specified search direction}
 \usage{
-bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp, lambda1,
-  lambda2, var.type, thresh = 0.001, b = 0.5)
+bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
+  lambda1, lambda2, var.type, thresh = 1e-05, b = 0.5)
 }
 \arguments{
 \item{y0}{nxp matrix of observations}

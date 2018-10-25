@@ -16,8 +16,6 @@
 #' @param lambda1.max positive number starting value of regularization parameter
 #' @param lambda2.max positive number starting value of regularization parameter
 #' @param length length of the grid of regularization parameters
-#' @param upper real number upper bound on entries of alpha and theta
-#' @param lower real number lower bound on entries of alpha and theta
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
@@ -47,29 +45,28 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
                  var.type = c("gaussian", "binary", "categorical", "poisson"),
                  lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                  thresh = 1e-6, trace.it = F, lambda1.max = NULL,
-                 lambda2.max = NULL, length = 20, upper = 12,
-                 lower = -12,  offset = T, scale = T, max.rank = 20, wmax = NULL)
+                 lambda2.max = NULL, length = 20,  offset = T, scale = T,
+                 max.rank = 20, wmax = NULL)
 {
   if(model == "groups"){
     return (mimi.multi(y = y, groups = groups, var.type = var.type, lambda1 = lambda1,
                        lambda2 = lambda2, maxit = maxit, mu0 = mu0, alpha0 = alpha0,
                        theta0 = theta0, thresh = thresh, trace.it = trace.it,
                        lambda1.max = lambda1.max, lambda2.max = lambda2.max,
-                       length = length, upper = upper, lower = lower, offset = offset,
-                       scale = scale, max.rank = max.rank, wmax = wmax))
+                       length = length, offset = offset, scale = scale,
+                       max.rank = max.rank, wmax = wmax))
   } else if(model == "covariates"){
     return(mimi.cov(y = y, x = x, var.type = var.type, lambda1 = lambda1,
                     lambda2 = lambda2, maxit = maxit, mu0 = mu0, alpha0 = alpha0,
                     theta0 = theta0, thresh = thresh, trace.it = trace.it,
                     lambda1.max = lambda1.max, lambda2.max = lambda2.max,
-                    length = length, upper = upper, lower = lower, offset = offset,
-                    scale = scale, max.rank = max.rank, wmax = wmax))
+                    length = length, offset = offset, scale = scale,
+                    max.rank = max.rank, wmax = wmax))
   } else{
     return(mimi.lr(y = y, var.type = var.type, lambda1 = lambda1, maxit = maxit,
                   theta0 = theta0, thresh = thresh, trace.it = trace.it,
-                  lambda1.max = lambda1.max, length = length, upper = upper,
-                  lower = lower, offset = offset, scale = scale, max.rank = max.rank,
-                  wmax = wmax))
+                  lambda1.max = lambda1.max, length = length, offset = offset,
+                  scale = scale, max.rank = max.rank, wmax = wmax))
 
   }
 }
@@ -92,8 +89,6 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 #' @param lambda1.max positive number starting value of regularization parameter
 #' @param lambda2.max positive number starting value of regularization parameter
 #' @param length length of the grid of regularization parameters
-#' @param upper real number upper bound on entries of alpha and theta
-#' @param lower real number lower bound on entries of alpha and theta
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
@@ -123,8 +118,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
                      lambda1, lambda2, maxit = 1e3, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                      thresh = 1e-4, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                     length = 50, upper = 12, lower = -12, offset = T, scale = F,
-                     max.rank = 20, wmax = NULL)
+                     length = 50, offset = T, scale = F, max.rank = 20, wmax = NULL)
 {
   yy <- y
   nlevel = rep(1, ncol(y))
@@ -199,7 +193,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
     res <- rwls_l1_nuc.cov(y, x, var.type = var.type, nlevel = nlevel,
                            lambda1 = exp(lambda1.grid.log[i]),
                            lambda2 = exp(lambda2.grid.log[i]), maxit = maxit,
-                           upper = upper, lower = lower, mu0 = list.mu[[iter]],
+                           mu0 = list.mu[[iter]],
                            alpha0 = list.alpha[[iter]],
                            theta0 = list.theta[[iter]], thresh = thresh,
                            trace.it = trace.it, offset = offset, scale = scale, vt2 = vt2,
@@ -232,8 +226,6 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 #' @param lambda1.max positive number, max value of regularization parameter for nuclear norm penalty
 #' @param lambda2.max positive number, max value of regularization parameter for l1 norm penalty
 #' @param length integer, size of grid for regularization path
-#' @param upper real number, upper bound on parameters entries
-#' @param lower real number, lower bound on parameters entries
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
@@ -257,7 +249,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                        thresh = 1e-5, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                       length = 20, upper = 12, lower = -12, offset = T, scale = T, max.rank = 20,
+                       length = 20, offset = T, scale = T, max.rank = 20,
                        wmax = NULL)
 {
   yy <- y
@@ -335,7 +327,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   for(i in 2:length){
     res <- rwls_l1_nuc.multi(y, groups = groups, var.type = var.type, nlevel = nlevel,
                              lambda1 = exp(lambda1.grid.log[i]), lambda2 = exp(lambda2.grid.log[i]),
-                             maxit = maxit, upper = upper, lower = lower, mu0 = list.mu[[iter]],
+                             maxit = maxit, mu0 = list.mu[[iter]],
                              alpha0 = list.alpha[[iter]], theta0 = list.theta[[iter]],
                              thresh = thresh, trace.it = trace.it, offset = offset, max.rank = max.rank,
                              vt2 = vt2, scale = scale, wmax = wmax)
@@ -361,8 +353,6 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 #' @param trace.it boolean, whether convergence information should be printed
 #' @param lambda1.max positive number, max value of regularization parameter for nuclear norm penalty
 #' @param length integer, size of grid for regularization path
-#' @param upper real number, upper bound on parameters entries
-#' @param lower real number, lower bound on parameters entries
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
@@ -380,7 +370,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 #' res <- mimi.lr(y0, var.type, lambda1 = 0.1)
 mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, maxit = 100, theta0 = NULL, thresh = 1e-5,
-                       trace.it = F, lambda1.max = NULL, length = 20, upper = 12, lower = -12,
+                       trace.it = F, lambda1.max = NULL, length = 20,
                        offset = T, scale = T, max.rank = 20, wmax = NULL)
 {
   yy <- y
@@ -437,10 +427,9 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
   list.res[[1]] <- list(y = y, theta = theta0, objective = 0, y.imputed = apply(y, c(1,2), function(xx){if(is.na(xx)) 0 else xx}))
   for(i in 2:length){
     res <- rwls_l1_nuc.lr(y, var.type = var.type, nlevel = nlevel, lambda1 = exp(lambda1.grid.log[i]),
-                          maxit = maxit, upper = upper, lower = lower,
-                          theta0 = list.theta[[iter]], thresh = thresh, trace.it = trace.it,
-                          offset = offset, max.rank = max.rank, vt2 = vt2, scale = scale,
-                          wmax = wmax)
+                          maxit = maxit, theta0 = list.theta[[iter]], thresh = thresh,
+                          trace.it = trace.it, offset = offset, max.rank = max.rank,
+                          vt2 = vt2, scale = scale, wmax = wmax)
     iter <- iter + 1
     list.res[[iter]] <- res
     list.theta[[iter]] <- res$theta

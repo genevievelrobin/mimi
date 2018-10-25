@@ -5,7 +5,8 @@
 \title{bls
 Performs backtracking line search along a pre-specified search direction}
 \usage{
-bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 0.001)
+bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, var.type,
+  thresh = 1e-05)
 }
 \arguments{
 \item{y0}{nxp observations matrix}

@@ -6,10 +6,10 @@
 Compute solution of mimi with group effects along regularization path}
 \usage{
 mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
-  "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL,
-  theta0 = NULL, thresh = 1e-05, trace.it = F, lambda1.max = NULL,
-  lambda2.max = NULL, length = 20, upper = 12, lower = -12,
-  offset = F, scale = F, max.rank = 20, wmax = NULL)
+  "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
+  alpha0 = NULL, theta0 = NULL, thresh = 1e-05, trace.it = F,
+  lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
+  scale = T, max.rank = 20, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -39,10 +39,6 @@ mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
 \item{lambda2.max}{positive number, max value of regularization parameter for l1 norm penalty}
 
 \item{length}{integer, size of grid for regularization path}
-
-\item{upper}{real number, upper bound on parameters entries}
-
-\item{lower}{real number, lower bound on parameters entries}
 
 \item{offset}{boolean, whether or not an offset should be fitted, default FALSE}
 

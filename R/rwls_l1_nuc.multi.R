@@ -121,8 +121,6 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL,
 #' @param alpha0 matrix of size (nb of groups)x(number of variables), initial value of the group effect, default 0
 #' @param theta0 matrix of size (nb of ind.)x(number of variables), initial value of the individual effect, default 0
 #' @param trace.it boolean, if TRUE information about convergence will be displayes, default FALSE
-#' @param upper real number upper bound on entries of alpha and theta
-#' @param lower real number lower bound on entries of alpha and theta
 #' @param offset boolean, whether an offset should be fitted
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param max.rank integer, maximum rank of interaction matrix theta
@@ -155,9 +153,9 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL,
 #' nl <- rep(1, 6)
 #' res <- rwls_l1_nuc.multi(y, groups, var.type, 0.1, 0.2, nl)
 rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
-                              maxit = 100, upper = 12, lower = -12, mu0 = NULL,
-                              alpha0 = NULL, theta0 = NULL, thresh = 1e-5, trace.it = F,
-                              offset = F, scale = F, max.rank = 5, vt2 = NULL, wmax = NULL){
+                              maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
+                              thresh = 1e-5, trace.it = F, offset = F, scale = F,
+                              max.rank = 5, vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
   p <- d[2]

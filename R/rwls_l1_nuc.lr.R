@@ -6,8 +6,6 @@
 #' @param nlevel vector of integers indicating the number of levels of each factor in y
 #' @param thresh positive number, convergence criterion
 #' @param maxit integer, maximum number of iterations
-#' @param upper real number, upper bound on entries of theta
-#' @param lower real number, lower bound on entries of theta
 #' @param theta0 matrix of size (nb of ind.)x(number of variables), initial value of the individual effect, default 0
 #' @param trace.it boolean, if TRUE information about convergence will be displayes, default FALSE
 #' @param offset boolean, if TRUE offset is computed, otherwise set to 0, default FALSE
@@ -36,17 +34,15 @@
 #' y[idx_NA] <- NA
 #' nl <- rep(1, 6)
 #' res <- rwls_l1_nuc.lr(y, var.type, 0.1, nl)
-rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, upper = NULL,
-                           lower = NULL, theta0 = NULL, thresh = 1e-5, trace.it = F,
-                           offset = F, scale = F, max.rank = 20, vt2 = NULL, wmax = NULL){
+rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, theta0 = NULL,
+                           thresh = 1e-5, trace.it = F, offset = F, scale = F, max.rank = 20,
+                           vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
   p <- d[2]
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
   omega <- !is.na(y)
-  if(is.null(upper)) upper <- 2*max(abs(y), na.rm = T)
-  if(is.null(lower)) lower <- -2*max(abs(y), na.rm = T)
   if(is.null(theta0)) theta0 <- matrix(rep(0, n * p), nrow = n)
   theta <- theta0
   param <- theta

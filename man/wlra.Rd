@@ -4,8 +4,8 @@
 \alias{wlra}
 \title{wlra}
 \usage{
-wlra(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-05, maxit = 100,
-  rank.max = NULL)
+wlra(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-05,
+  maxit = 1000, rank.max = NULL)
 }
 \arguments{
 \item{x}{nxp matrix to be approximates}

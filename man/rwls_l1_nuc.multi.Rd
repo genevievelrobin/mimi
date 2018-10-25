@@ -5,8 +5,8 @@
 \title{rwls_l1_nuc.multi}
 \usage{
 rwls_l1_nuc.multi(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
-  maxit = 100, upper = 12, lower = -12, mu0 = NULL, alpha0 = NULL,
-  theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F, scale = F,
+  maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
+  thresh = 1e-05, trace.it = F, offset = F, scale = F,
   max.rank = 5, vt2 = NULL, wmax = NULL)
 }
 \arguments{
@@ -23,10 +23,6 @@ rwls_l1_nuc.multi(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
 \item{nlevel}{vector of integers indicating the number of levels of each factor in y}
 
 \item{maxit}{integer, maximum number of iterations}
-
-\item{upper}{real number upper bound on entries of alpha and theta}
-
-\item{lower}{real number lower bound on entries of alpha and theta}
 
 \item{mu0}{real number, initial value of the offset, default 0}
 

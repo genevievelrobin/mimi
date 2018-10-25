@@ -6,7 +6,7 @@
 Performs backtracking line search along a pre-specified search direction}
 \usage{
 bls.cov(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp, b = 0.5,
-  lambda1, lambda2, var.type, thresh = 0.001)
+  lambda1, lambda2, var.type, thresh = 1e-05, sc)
 }
 \arguments{
 \item{y0}{nxp observations matrix}
