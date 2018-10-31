@@ -4,9 +4,9 @@
 \alias{covmat}
 \title{covmat}
 \usage{
-covmat(R, C, n, p)
+covmat(R = NULL, C = NULL, n, p)
 
-covmat(R, C, n, p)
+covmat(R = NULL, C = NULL, n, p)
 }
 \arguments{
 \item{R}{nxK1 matrix of row covariates}

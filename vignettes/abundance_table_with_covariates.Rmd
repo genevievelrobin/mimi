@@ -67,8 +67,9 @@ aravo$env <- aravo$env[,!(names(aravo$env)%in%"Form")]
 aravo$env$ZoogDno <- 1*(aravo$env$ZoogD=="no")
 aravo$env$ZoogDyes <- 1*(aravo$env$ZoogD=="yes")
 aravo$env <- aravo$env[,!(names(aravo$env)%in%"ZoogD")]
-X <- covmat(aravo$env, aravo$traits)
+X <- covmat(aravo$env, aravo$traits,nrow(aravo$spe), ncol(aravo$spe))
 # scale and center the covariates
+X <- X[,-c(8,9)] # remove ZoogD
 X <- scale(X)
 ```
 
@@ -77,10 +78,10 @@ Now we can proceed to the estimation
 ```{r mimi-estimation}
 vt <- rep("poisson", ncol(aravo$spe)) # indicate the type of the columns of Y
 res <- mimi(aravo$spe, model = "covariates", x = X, var.type = vt,
-            lambda1 = 5, lambda2 = 1e-2)
-df.alpha <- data.frame(var = c(colnames(aravo$env),
+            lambda1 = 5, lambda2 = 0.05)
+df.alpha <- data.frame(var = c(colnames(aravo$env)[-c(8,9)],
                                colnames(aravo$traits)),
-                       alpha = res$list.alpha[[20]])
+                       alpha = as.numeric(res$list.alpha[[20]]))
 ```
 
 For a given value of $\lambda_1$ and $\lambda_2$ we obtain an estimate of the covariate effects and of the interaction. Here, the estimated interaction matrix is of rank $1$.
@@ -89,12 +90,5 @@ df.alpha
 sum(svd(res$list.theta[[20]])$d>1e-6)
 
 ```
-
-The parameters $\lambda_1$ and $\lambda_2$ can also be estimated by cross validation. We comment the code below because it is quite long to run.
-```{r cv}
-#res.cv <- cv.mimi(y = aravo$spe, model = "covariates", x = X)
-```
-
-
 
 

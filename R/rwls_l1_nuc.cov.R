@@ -32,7 +32,7 @@
 #' res <- wls_l1_nuc.cov(y, x, lambda1 = 0.1, lambda2 = 0.2)
 wls_l1_nuc.cov <- function(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-5,
                        maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                       trace.it = F, offset = F, max.rank = 20) {
+                       trace.it = F, offset = F, max.rank = 5) {
   x <- as.matrix(x)
   y <- as.matrix(y)
   d <- dim(y)
@@ -62,9 +62,10 @@ wls_l1_nuc.cov <- function(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-5
     mu.tmp <- mu
     alpha.tmp <- alpha
     theta.tmp <- theta
-    if(offset) mu <-  sum(weights * (y - alpha.mat - theta.tmp), na.rm = T) / sum(weights) else mu <- 0
-    alpha <- glmnet(x, c(y - mu - theta.tmp), family = "gaussian", lambda = seq(1e3*lambda2, lambda2, length.out = 100),
-                    intercept = FALSE, thresh = thresh, weights = c(weights))$beta[, 100]
+    alpha <- glmnet(x, c(y - mu - theta.tmp), family = "gaussian", lambda = lambda2,
+                    intercept = FALSE, thresh = thresh, weights = c(weights))
+    mu <- alpha$a0
+    alpha <- as.numeric(alpha$beta)
     alpha.mat <- matrix(matrix(as.numeric(x), nrow = n*p)%*%alpha, nrow = n)
     svd_theta <- wlra(y - mu - alpha.mat, w = weights, lambda = lambda1, x0 = NULL,
                               thresh = thresh, rank.max = max.rank)
@@ -141,7 +142,7 @@ wls_l1_nuc.cov <- function(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-5
 #' res <- rwls_l1_nuc.cov(y, x, var.type, 0.1, 0.2, nl)
 rwls_l1_nuc.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 100,
                             mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-                            thresh = 1e-5, trace.it = F, offset = F, scale = F, max.rank = 20,
+                            thresh = 1e-5, trace.it = F, offset = F, scale = F, max.rank = 5,
                             vt2 = NULL, wmax = NULL){
   d <- dim(y)
   n <- d[1]
@@ -205,6 +206,7 @@ rwls_l1_nuc.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, max
     mu.tmp <- mu
     alpha.tmp <- alpha
     theta.tmp <- theta
+
     yv <- quad_approx(y0, param, var.type, nlevel, wmax)
     ytilde <- yv$ytilde
     vtilde2 <- yv$vtilde2
@@ -224,7 +226,8 @@ rwls_l1_nuc.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, max
     alpha.mat <- matrix(matrix(as.numeric(x), nrow=n*p)%*%alpha, nrow=n)
     param <- mu + alpha.mat + theta
     res <- bls.cov(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                   b=0.5, lambda1, lambda2, var.type, thresh, sc=sc)
+                   b=0.5, lambda1, lambda2, var.type, thresh, sc=sc,
+                   nlevel=nlevel, vt2=vt2)
     mu <- res$mu
     alpha <- res$alpha
     theta <- res$theta

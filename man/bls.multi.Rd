@@ -6,7 +6,7 @@
 Performs backtracking line search along a pre-specified search direction}
 \usage{
 bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-  lambda1, lambda2, var.type, thresh = 1e-05, b = 0.5)
+  lambda1, lambda2, var.type, thresh = 1e-05, b = 0.5, nlevel, vt2)
 }
 \arguments{
 \item{y0}{nxp matrix of observations}
@@ -34,6 +34,10 @@ bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 \item{thresh}{positive number congervence criterion}
 
 \item{b}{number in (0,1) factor by which step size is reduced}
+
+\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
+
+\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
 }
 \value{
 A list with the following elements

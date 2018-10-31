@@ -6,7 +6,7 @@
 Performs backtracking line search along a pre-specified search direction}
 \usage{
 bls.cov(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp, b = 0.5,
-  lambda1, lambda2, var.type, thresh = 1e-05, sc)
+  lambda1, lambda2, var.type, thresh = 1e-05, sc, nlevel, vt2)
 }
 \arguments{
 \item{y0}{nxp observations matrix}
@@ -34,6 +34,12 @@ bls.cov(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp, b = 0.5,
 \item{var.type}{vector of length p indicating column types for y (gaussian, binary, poisson)}
 
 \item{thresh}{positive number, convergence criterion}
+
+\item{sc}{scaling matrix}
+
+\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
+
+\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
 }
 \value{
 A list with the following elements
@@ -57,5 +63,5 @@ mut <- 0.1
 alphat <- rnorm(2)
 thetat <- matrix(rnorm(6 * 10), nrow = 6)
 v <- rep("gaussian", 10)
-t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v)
+t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v, sc=matrix(1,6,10))
 }

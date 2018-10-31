@@ -10,7 +10,7 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-06, trace.it = F,
   lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 20, wmax = NULL)
+  scale = T, max.rank = 5, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -50,6 +50,8 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
+
+\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list with the following elements

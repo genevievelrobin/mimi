@@ -6,7 +6,7 @@
 \usage{
 wls_l1_nuc.cov(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-05,
   maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
-  trace.it = F, offset = F, max.rank = 20)
+  trace.it = F, offset = F, max.rank = 5)
 }
 \arguments{
 \item{y}{observation matrix}

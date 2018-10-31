@@ -19,6 +19,7 @@
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
+#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
@@ -46,7 +47,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
                  lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                  thresh = 1e-6, trace.it = F, lambda1.max = NULL,
                  lambda2.max = NULL, length = 20,  offset = T, scale = T,
-                 max.rank = 20, wmax = NULL)
+                 max.rank = 5, wmax = NULL)
 {
   if(model == "groups"){
     return (mimi.multi(y = y, groups = groups, var.type = var.type, lambda1 = lambda1,
@@ -92,6 +93,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
+#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
@@ -118,7 +120,7 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
                      lambda1, lambda2, maxit = 1e3, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                      thresh = 1e-4, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                     length = 50, offset = T, scale = F, max.rank = 20, wmax = NULL)
+                     length = 50, offset = T, scale = F, max.rank = 5, wmax = NULL)
 {
   yy <- y
   nlevel = rep(1, ncol(y))
@@ -229,7 +231,8 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
-
+#' @param wmax maximum weight of quadratic approximation
+#'
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 (log scale)}
 #' \item{lambda2.grid}{the grid of lambda2 (log scale)}
@@ -249,7 +252,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                        thresh = 1e-5, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                       length = 20, offset = T, scale = T, max.rank = 20,
+                       length = 20, offset = T, scale = T, max.rank = 5,
                        wmax = NULL)
 {
   yy <- y
@@ -356,7 +359,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
-
+#' @param wmax maximum weight of quadratic approximation
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 (log scale)}
 #' \item{list.res}{List of same length as regularization grid with output of mimi for each lambda}
@@ -371,7 +374,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, maxit = 100, theta0 = NULL, thresh = 1e-5,
                        trace.it = F, lambda1.max = NULL, length = 20,
-                       offset = T, scale = T, max.rank = 20, wmax = NULL)
+                       offset = T, scale = T, max.rank = 5, wmax = NULL)
 {
   yy <- y
   nlevel = rep(1, ncol(y))
@@ -393,7 +396,6 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
     colnames(tab) <- paste(rep(colnames(y[, var.type == "categorical"]), nlevel[var.type == "categorical"])
                            ,".", c(sapply(nlevel[var.type == "categorical"], function(k) 1:k)), sep = "")
     y2 <- rep(0, n)
-    x2 <- rep(0, ncol(x))
     vt2 <- NULL
     count <- 1
     for(j in 1:ncol(y)){

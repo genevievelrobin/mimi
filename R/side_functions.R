@@ -4,6 +4,7 @@
 #' @param param real number: current value of parameter
 #' @param var.type type of variable y (gaussian, binary, poisson)
 #' @param nlevel vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories)
+#' @param wmax maximum weight of quadratic approximation
 #' @return weight of the quadratic approximation
 #' @export
 #' @examples
@@ -191,6 +192,9 @@ wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-5, maxit = 1e3,
 #' @param lambda2 positive number, regularization parameter for l1 norm penalty
 #' @param var.type vector of length p indicating column types for y (gaussian, binary, poisson)
 #' @param thresh positive number, convergence criterion
+#' @param nlevel vector of integers indicating the number of levels of each factor in y
+#' @param vt2 vector indicating types of the columns of the extended data frame y (with dummies for every category)
+#' @param sc scaling matrix
 #' @export
 #' @import stats
 #' @return A list with the following elements
@@ -209,9 +213,10 @@ wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-5, maxit = 1e3,
 #' alphat <- rnorm(2)
 #' thetat <- matrix(rnorm(6 * 10), nrow = 6)
 #' v <- rep("gaussian", 10)
-#' t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v)
+#' t <- bls.cov(y, x, mu, alpha, theta, mut, alphat, thetat, lambda1 = 1, lambda2 = 1, var.type = v, sc=matrix(1,6,10))
 bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                    b = 0.5, lambda1, lambda2, var.type, thresh = 1e-5, sc){
+                    b = 0.5, lambda1, lambda2, var.type, thresh = 1e-5, sc,
+                    nlevel, vt2){
   #thresh = 0
   d <- dim(y0)
   n <- d[1]
@@ -308,6 +313,8 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 #' @param lambda2 positive number regularization parameter for l1 norm penalty
 #' @param var.type vector of length p indicating variable types (gaussian, binary, poisson)
 #' @param thresh positive number congervence criterion
+#' @param nlevel vector of integers indicating the number of levels of each factor in y
+#' @param vt2 vector indicating types of the columns of the extended data frame y (with dummies for every category)
 #'
 #' @import stats
 #' @export
@@ -329,7 +336,8 @@ bls.cov <- function(y0, x, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
 #' gps <- as.factor(c(1,1,2,2,3,3))
 #' bls <- bls.multi(y0, gps, m, a, t, mt, at, tt, 1, 1, v)
 bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                      lambda1, lambda2, var.type, thresh = 1e-5, b = 0.5){
+                      lambda1, lambda2, var.type, thresh = 1e-5, b = 0.5, nlevel,
+                      vt2){
   d <- dim(y0)
   n <- d[1]
   p <- d[2]
@@ -423,6 +431,8 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
 #' @param lambda1 positive number, regularization parameter for nuclear norm penalty
 #' @param var.type vector of length p indicating column types for y (gaussian, binary, poisson)
 #' @param thresh positive number, convergence criterion
+#' @param nlevel vector of integers indicating the number of levels of each factor in y
+#' @param vt2 vector indicating types of the columns of the extended data frame y (with dummies for every category)
 #' @export
 #' @import stats
 #' @return A list with the following elements
@@ -435,7 +445,8 @@ bls.multi <- function(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp
 #' thetat <- matrix(rnorm(6 * 10), nrow = 6)
 #' v <- rep("gaussian", 10)
 #' t <- bls.lr(y, theta, thetat, lambda1 = 1, var.type = v)
-bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e-5){
+bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e-5,
+                   nlevel, vt2){
   d <- dim(y0)
   n <- d[1]
   p <- d[2]
@@ -525,7 +536,7 @@ bls.lr <- function(y0, theta, theta.tmp, b = 0.5, lambda1, var.type, thresh = 1e
 #' R <- matrix(rnorm(10), 5)
 #' C <- matrix(rnorm(9), 3)
 #' covs <- covmat(R,C,5,3)
-covmat <- function(R,C,n,p){
+covmat <- function(R=NULL,C=NULL,n,p){
   if(is.null(R)) {
     covs <- covmatC(C,n)
   } else if(is.null(C)) {

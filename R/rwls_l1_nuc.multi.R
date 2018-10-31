@@ -125,6 +125,7 @@ wls_l1_nuc.multi <- function(y, groups, lambda1, lambda2, weights = NULL,
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param max.rank integer, maximum rank of interaction matrix theta
 #' @param vt2 vector indicating types of the columns of the extended data frame y (with dummies for every category)
+#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list vith the following elements
 #' \item{y}{the original data matrix}
@@ -215,7 +216,7 @@ rwls_l1_nuc.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NU
     param <- mu + alpha.rep + theta
 
     res <- bls.multi(y0, groups, mu, alpha, theta, mu.tmp, alpha.tmp, theta.tmp,
-                     b = 0.5, lambda1, lambda2, var.type, thresh)
+                     b = 0.5, lambda1, lambda2, var.type, thresh, nlevel,vt2)
     mu <- res$mu
     alpha <- res$alpha
     theta <- res$theta

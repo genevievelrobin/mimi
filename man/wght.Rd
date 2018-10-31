@@ -14,6 +14,8 @@ wght(y, param, var.type, nlevel = NULL, wmax)
 \item{var.type}{type of variable y (gaussian, binary, poisson)}
 
 \item{nlevel}{vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories)}
+
+\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 weight of the quadratic approximation

@@ -41,6 +41,8 @@ rwls_l1_nuc.multi(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
 
 \item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
+
+\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list vith the following elements

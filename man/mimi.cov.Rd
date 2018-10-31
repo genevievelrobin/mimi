@@ -9,7 +9,7 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 1000, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-04, trace.it = F,
   lambda1.max = NULL, lambda2.max = NULL, length = 50, offset = T,
-  scale = F, max.rank = 20, wmax = NULL)
+  scale = F, max.rank = 5, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -45,6 +45,8 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
+
+\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list with the following elements

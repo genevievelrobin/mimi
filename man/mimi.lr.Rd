@@ -8,7 +8,7 @@ Compute solution of mimi for low-rank model along regularization path}
 mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
   lambda1, maxit = 100, theta0 = NULL, thresh = 1e-05,
   trace.it = F, lambda1.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 20, wmax = NULL)
+  scale = T, max.rank = 5, wmax = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -34,6 +34,8 @@ mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix}
+
+\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list with the following elements

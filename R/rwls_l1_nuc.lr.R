@@ -77,7 +77,7 @@ rwls_l1_nuc.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, the
     if(scale) {
       theta <- sweep(theta, 2, scaling, "*")
     }
-    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh)
+    res <- bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, vt2, thresh,nlevel,vt2)
     theta <- res$theta
     param <- theta
     objective <- c(objective, min(.Machine$double.xmax, res$objective))

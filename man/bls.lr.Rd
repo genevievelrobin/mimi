@@ -6,7 +6,7 @@
 Performs backtracking line search along a pre-specified search direction}
 \usage{
 bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, var.type,
-  thresh = 1e-05)
+  thresh = 1e-05, nlevel, vt2)
 }
 \arguments{
 \item{y0}{nxp observations matrix}
@@ -22,6 +22,10 @@ bls.lr(y0, theta, theta.tmp, b = 0.5, lambda1, var.type,
 \item{var.type}{vector of length p indicating column types for y (gaussian, binary, poisson)}
 
 \item{thresh}{positive number, convergence criterion}
+
+\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
+
+\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
 }
 \value{
 A list with the following elements
