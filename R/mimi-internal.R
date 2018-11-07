@@ -176,7 +176,7 @@ irwls.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 1
     }
   } else scaling <- rep(1, ncol(y))
   sc <- matrix(rep(scaling, n), nrow = n, byrow = T)
-  while((error > thresh) && (iter < maxit)){
+  while(((error > thresh) && (iter < maxit))){
     iter <- iter + 1
     mu.tmp <- mu
     alpha.tmp <- alpha
@@ -192,8 +192,7 @@ irwls.cov <- function(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 1
     }
     res_approx <- wls.cov(ytilde, x, lambda1w, lambda2w, weights = vtilde2,
                                  thresh = thresh, mu0 = mu.tmp, alpha0 = alpha.tmp,
-                                 theta0 = theta.tmp, trace.it = F, maxit = maxit,
-                                 offset = offset)
+                                 theta0 = theta.tmp, trace.it = F, offset = offset)
     mu <- res_approx$mu
     alpha <- res_approx$alpha
     theta <- res_approx$theta
@@ -293,7 +292,7 @@ irwls.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, theta0 = 
   y0 <- y
   error <- 1
   iter <- 0
-  while((error > thresh) && (iter < maxit)){
+  while(((error > thresh) && (iter < maxit))){
     iter <- iter + 1
     theta.tmp <- theta
     param.tmp <- param
@@ -307,7 +306,7 @@ irwls.lr <- function(y, var.type, lambda1, nlevel = NULL, maxit = 100, theta0 = 
     lambda1w <- lambda1 / max(vtilde2)
     vtilde2 <- vtilde2 / max(vtilde2)
     svd_theta <- wlra(x = ytilde, w = vtilde2, lambda = lambda1w, x0 = NULL, thresh = 0.1*thresh,
-                      rank.max = max.rank, maxit = 1e3)
+                      rank.max = max.rank)
     u <- svd_theta$u
     d <- svd_theta$d
     v <- svd_theta$v
@@ -410,7 +409,7 @@ wls.multi <- function(y, groups, lambda1, lambda2, weights = NULL,
   y <- y0
   error <- 1
   iter <- 0
-  while((error > thresh) && (iter < maxit)){
+  while(((error > thresh) && (iter < maxit))){
     iter <- iter + 1
     y.tmp <- mu + alpha.rep + theta
     y <- y0
@@ -514,7 +513,7 @@ irwls.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
   omega <- !is.na(y)
   ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
 
-  while((error > thresh) && (iter < maxit)){
+  while(((error > thresh) && (iter < maxit))){
     iter <- iter + 1
     mu.tmp <- mu
     alpha.tmp <- alpha
@@ -530,9 +529,9 @@ irwls.multi <- function(y, groups, var.type, lambda1, lambda2, nlevel = NULL,
     lambda2w <- lambda2 / (max(vtilde2))
     vtilde2 <- vtilde2 / max(vtilde2)
     res_approx <- wls.multi(ytilde, groups, lambda1w, lambda2w, weights = vtilde2,
-                                  thresh = thresh, mu0 = mu.tmp, alpha0 = alpha.tmp,
-                                  theta0 = theta.tmp, trace.it = F, maxit = maxit,
-                                  offset = offset, max.rank = max.rank)
+                            thresh = thresh, mu0 = mu.tmp, alpha0 = alpha.tmp,
+                            theta0 = theta.tmp, trace.it = F, offset = offset,
+                            max.rank = max.rank)
     mu <- res_approx$mu
     alpha <- res_approx$alpha
     theta <- res_approx$theta
@@ -683,7 +682,7 @@ wlra <- function(x, w = NULL, lambda = 0, x0 = NULL, thresh = 1e-5, maxit = 1e3,
   iter <- 0
   error <- 100
   svd.xfill=svd(xfill)
-  while((error > thresh) && (iter < maxit)){
+  while(((error > thresh) && (iter < maxit))){
     iter <- iter + 1
     svd.old=svd(xhat)
     xhat.old <- xhat

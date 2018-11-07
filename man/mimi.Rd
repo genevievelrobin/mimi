@@ -11,8 +11,7 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
   groups = NULL, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-06, trace.it = F,
-  lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 5)
+  offset = T, scale = T, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -41,12 +40,6 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
 
 \item{trace.it}{boolean indicating whether convergence information should be printed}
 
-\item{lambda1.max}{positive number starting value of regularization parameter}
-
-\item{lambda2.max}{positive number starting value of regularization parameter}
-
-\item{length}{length of the grid of regularization parameters}
-
 \item{offset}{boolean indicating whether or not an offset should be fitted}
 
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
@@ -55,8 +48,6 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
 }
 \value{
 A list with the following elements
-\item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
-\item{lambda2.grid}{the grid of lambda2 used for warm start (log scale)}
 \item{mu}{offset}
 \item{alpha}{vector of main effects}
 \item{theta}{interaction matrix}
@@ -76,8 +67,7 @@ y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
 var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
-idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
+idx_NA <- sample(1:(3 * n * p), size = round(0.01 * 3 * n * p))
 y[idx_NA] <- NA
-x <- matrix(rnorm(6*6*2), nrow = 6*6)
-res <- mimi(y, model = "covariates", x = x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
+res <- mimi(y, model = "low-rank", var.type = var.type, lambda1 = 1, maxit=5)
 }

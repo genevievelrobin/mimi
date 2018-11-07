@@ -8,8 +8,7 @@ Compute solution of mimi with group effects along regularization path}
 mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-05, trace.it = F,
-  lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 5)
+  offset = T, scale = T, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -34,12 +33,6 @@ mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
 
 \item{trace.it}{boolean, whether convergence information should be printed}
 
-\item{lambda1.max}{positive number, max value of regularization parameter for nuclear norm penalty}
-
-\item{lambda2.max}{positive number, max value of regularization parameter for l1 norm penalty}
-
-\item{length}{integer, size of grid for regularization path}
-
 \item{offset}{boolean, whether or not an offset should be fitted, default FALSE}
 
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
@@ -59,10 +52,12 @@ mimi.multi
 Compute solution of mimi with group effects along regularization path
 }
 \examples{
-y0 <- matrix(rnorm(6 * 10), nrow = 6)
-y0[sample(1:50, size = 10)] <- NA
+param <- matrix(rnorm(6 * 10), nrow = 6)
 groups <- c(1,1,2,2,3,3)
 groups <- as.factor(groups)
+param[groups==1, 1] <- 2
+param[groups==2, 2] <- 2
+y <- matrix(rnorm(6*10,c(param)), nrow=6)
 var.type <- rep("gaussian", 10)
-res <- mimi.multi(y0, groups, var.type, lambda1 = 0.1, lambda2 = 0.2)
+res <- mimi.multi(y, groups, var.type, lambda1 = 1, lambda2 = 2, thresh=0.1)
 }

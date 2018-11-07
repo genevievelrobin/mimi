@@ -8,8 +8,7 @@ Compute solution of mimi with covariates effects along regularization path}
 mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-04, trace.it = F,
-  lambda1.max = NULL, lambda2.max = NULL, length = 50, offset = T,
-  scale = F, max.rank = 5)
+  offset = T, scale = F, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -34,12 +33,6 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
 
 \item{trace.it}{boolean indicating whether convergence information should be printed}
 
-\item{lambda1.max}{positive number starting value of regularization parameter}
-
-\item{lambda2.max}{positive number starting value of regularization parameter}
-
-\item{length}{length of the grid of regularization parameters}
-
 \item{offset}{boolean indicating whether or not an offset should be fitted}
 
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
@@ -60,15 +53,14 @@ Compute solution of mimi with covariates effects along regularization path
 }
 \examples{
 n = 6; p = 2
-y1 <- matrix(rnorm(mean = 0, n * p), nrow = n)
-y2 <- matrix(rnorm(mean = 0, n * p), nrow = n)
-y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
-y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
-           matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
-           matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
+x <- matrix(rnorm(6*6*2), nrow = 6*6)
+param <- matrix(x\%*\%c(2,0), nrow=6)+matrix(rnorm(6*6), nrow=6)
+y1 <- matrix(rnorm(mean = c(param[, 1:2]), n * p), nrow = n)
+y2 <- matrix(rbinom(n * p, prob = c(exp(param[,3:4])/(1+exp(param[,3:4]))), size = 1), nrow = n)
+y3 <- matrix(rpois(n * p, lambda = c(exp(param[,5:6]))), nrow = n)
+y <- cbind(y1, y2, y3)
 var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
 idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 y[idx_NA] <- NA
-x <- matrix(rnorm(6*6*2), nrow = 6*6)
-res <- mimi.cov(y, x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
+res <- mimi.cov(y, x, var.type = var.type, lambda1 = 1, lambda2 = 2, thresh=0.1)
 }

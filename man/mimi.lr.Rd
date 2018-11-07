@@ -7,8 +7,7 @@ Compute solution of mimi for low-rank model along regularization path}
 \usage{
 mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
   lambda1, maxit = 100, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, lambda1.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 5)
+  trace.it = F, offset = T, scale = T, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -24,10 +23,6 @@ mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
 \item{thresh}{positive number, convergence criterion}
 
 \item{trace.it}{boolean, whether convergence information should be printed}
-
-\item{lambda1.max}{positive number, max value of regularization parameter for nuclear norm penalty}
-
-\item{length}{integer, size of grid for regularization path}
 
 \item{offset}{boolean, whether or not an offset should be fitted, default FALSE}
 
