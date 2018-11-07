@@ -2,20 +2,22 @@
 % Please edit documentation in R/mimi.R
 \name{mimi}
 \alias{mimi}
-\title{mimi
-Compute solution of mimi with covariates/groups along regularization path}
+\title{mimi (Main effects and Interactions in Mixed and Incomplete data frames)
+The method estimates main effects (group effects or effects of covariates)
+and interactions in mixed data frames with missing values. The results can be used
+for imputation or interpretation purposes.}
 \usage{
 mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
   groups = NULL, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-06, trace.it = F,
   lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 5, wmax = NULL)
+  scale = T, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
 
-\item{model}{either one of "groups" or "covariates", indicating which model should be fitted}
+\item{model}{either one of "groups", "covariates" or "low-rank", indicating which model should be fitted}
 
 \item{x}{(np)xN matrix of covariates (optional)}
 
@@ -50,21 +52,20 @@ mimi(y, model = c("groups", "covariates", "low-rank"), x = NULL,
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
-
-\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list with the following elements
 \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
 \item{lambda2.grid}{the grid of lambda2 used for warm start (log scale)}
-\item{list.res}{list of results of rwls_l1_nuc (same length as grid of lambda)}
-\item{list.mu}{list of offsets (same length as grid of lambda)}
-\item{list.alpha}{list of regression parameters (same length as grid of lambda)}
-\item{list.theta}{list of interaction matrices (same length as grid of lambda)}
+\item{mu}{offset}
+\item{alpha}{vector of main effects}
+\item{theta}{interaction matrix}
 }
 \description{
-mimi
-Compute solution of mimi with covariates/groups along regularization path
+mimi (Main effects and Interactions in Mixed and Incomplete data frames)
+The method estimates main effects (group effects or effects of covariates)
+and interactions in mixed data frames with missing values. The results can be used
+for imputation or interpretation purposes.
 }
 \examples{
 n = 6; p = 2

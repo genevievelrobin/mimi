@@ -1,7 +1,9 @@
-#' mimi
-#' Compute solution of mimi with covariates/groups along regularization path
+#' mimi (Main effects and Interactions in Mixed and Incomplete data frames)
+#' The method estimates main effects (group effects or effects of covariates)
+#' and interactions in mixed data frames with missing values. The results can be used
+#' for imputation or interpretation purposes.
 #' @param y nxp matrix of observations
-#' @param model either one of "groups" or "covariates", indicating which model should be fitted
+#' @param model either one of "groups", "covariates" or "low-rank", indicating which model should be fitted
 #' @param x (np)xN matrix of covariates (optional)
 #' @param groups factor of length n indicating groups (optional)
 #' @param var.type vector of length p indicating the data types of the columns of y (gaussian, binary or poisson)
@@ -19,15 +21,13 @@
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
-#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list with the following elements
 #' \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
 #' \item{lambda2.grid}{the grid of lambda2 used for warm start (log scale)}
-#' \item{list.res}{list of results of rwls_l1_nuc (same length as grid of lambda)}
-#' \item{list.mu}{list of offsets (same length as grid of lambda)}
-#' \item{list.alpha}{list of regression parameters (same length as grid of lambda)}
-#' \item{list.theta}{list of interaction matrices (same length as grid of lambda)}
+#' \item{mu}{offset}
+#' \item{alpha}{vector of main effects}
+#' \item{theta}{interaction matrix}
 #' @export
 #' @examples
 #' n = 6; p = 2
@@ -41,13 +41,13 @@
 #' idx_NA <- sample(1:(3 * n * p), size = round(0.1 * 3 * n * p))
 #' y[idx_NA] <- NA
 #' x <- matrix(rnorm(6*6*2), nrow = 6*6)
-#' res <- mimi(y, model = "covariates", x = x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
+#' res <- mimi(y, model = "covariates", x = x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2, maxit=2)
 mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, groups = NULL,
                  var.type = c("gaussian", "binary", "categorical", "poisson"),
                  lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                  thresh = 1e-6, trace.it = F, lambda1.max = NULL,
                  lambda2.max = NULL, length = 20,  offset = T, scale = T,
-                 max.rank = 5, wmax = NULL)
+                 max.rank = 5)
 {
   if(model == "groups"){
     return (mimi.multi(y = y, groups = groups, var.type = var.type, lambda1 = lambda1,
@@ -55,19 +55,19 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
                        theta0 = theta0, thresh = thresh, trace.it = trace.it,
                        lambda1.max = lambda1.max, lambda2.max = lambda2.max,
                        length = length, offset = offset, scale = scale,
-                       max.rank = max.rank, wmax = wmax))
+                       max.rank = max.rank))
   } else if(model == "covariates"){
     return(mimi.cov(y = y, x = x, var.type = var.type, lambda1 = lambda1,
                     lambda2 = lambda2, maxit = maxit, mu0 = mu0, alpha0 = alpha0,
                     theta0 = theta0, thresh = thresh, trace.it = trace.it,
                     lambda1.max = lambda1.max, lambda2.max = lambda2.max,
                     length = length, offset = offset, scale = scale,
-                    max.rank = max.rank, wmax = wmax))
+                    max.rank = max.rank))
   } else{
     return(mimi.lr(y = y, var.type = var.type, lambda1 = lambda1, maxit = maxit,
                   theta0 = theta0, thresh = thresh, trace.it = trace.it,
                   lambda1.max = lambda1.max, length = length, offset = offset,
-                  scale = scale, max.rank = max.rank, wmax = wmax))
+                  scale = scale, max.rank = max.rank))
 
   }
 }
@@ -93,15 +93,13 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
-#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list with the following elements
-#' \item{lambda1.grid}{the grid of lambda1 used for warm start (log scale)}
-#' \item{lambda2.grid}{the grid of lambda2 used for warm start (log scale)}
-#' \item{list.res}{list of results of rwls_l1_nuc (same length as grid of lambda)}
-#' \item{list.mu}{list of offsets (same length as grid of lambda)}
-#' \item{list.alpha}{list of regression parameters (same length as grid of lambda)}
-#' \item{list.theta}{list of interaction matrices (same length as grid of lambda)}
+#' \item{yimputed}{imputed data set}
+#' \item{param}{estimated parameter matrix}
+#' \item{mu}{estimated offset}
+#' \item{alpha}{estimated vector of main effects}
+#' \item{theta}{estimated interaction matrix}
 #' @export
 #' @importFrom FactoMineR tab.disjonctif.prop
 #' @examples
@@ -118,9 +116,9 @@ mimi <- function(y, model = c("groups", "covariates", "low-rank"), x = NULL, gro
 #' x <- matrix(rnorm(6*6*2), nrow = 6*6)
 #' res <- mimi.cov(y, x, var.type = var.type, lambda1 = 0.1, lambda2 = 0.2)
 mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "poisson"),
-                     lambda1, lambda2, maxit = 1e3, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
+                     lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                      thresh = 1e-4, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                     length = 50, offset = T, scale = F, max.rank = 5, wmax = NULL)
+                     length = 50, offset = T, scale = F, max.rank = 5)
 {
   yy <- y
   nlevel = rep(1, ncol(y))
@@ -162,7 +160,6 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
     y <- y2[, 2:ncol(y2)]
   } else vt2 <- var.type
   y <- as.matrix(y)
-  if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
   d <- dim(y)
   n <- d[1]
   p <- d[2]
@@ -182,33 +179,18 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
   alpha <- alpha0
   alpha.mat <- matrix(matrix(as.numeric(x), nrow = n*p)%*%alpha, nrow = n)
   theta <- theta0
-  iter <- 1
-  list.mu <- list()
-  list.alpha <- list()
-  list.theta <- list()
-  list.mu[[1]] <- mu0
-  list.alpha[[1]] <- alpha0
-  list.theta[[1]] <- theta0
-  list.res <- list()
-  list.res[[1]] <- mu0 + alpha.mat + theta0
   for(i in 2:length){
-    res <- rwls_l1_nuc.cov(y, x, var.type = var.type, nlevel = nlevel,
+    res <- irwls.cov(y, x, var.type = var.type, nlevel = nlevel,
                            lambda1 = exp(lambda1.grid.log[i]),
                            lambda2 = exp(lambda2.grid.log[i]), maxit = maxit,
-                           mu0 = list.mu[[iter]],
-                           alpha0 = list.alpha[[iter]],
-                           theta0 = list.theta[[iter]], thresh = thresh,
-                           trace.it = trace.it, offset = offset, scale = scale, vt2 = vt2,
-                           wmax = wmax)
-    iter <- iter + 1
-    list.res[[iter]] <- res
-    list.mu[[iter]] <- res$mu
-    list.alpha[[iter]] <- res$alpha
-    list.theta[[iter]] <- res$theta
+                           mu0 = mu, alpha0 = alpha, theta0 = theta, thresh = thresh,
+                           trace.it = trace.it, offset = offset, scale = scale, vt2 = vt2)
+    mu <- res$mu
+    alpha <- res$alpha
+    theta <- res$theta
   }
-  return(list(lambda1.grid = lambda1.grid.log, lambda2.grid = lambda2.grid.log,
-              list.res = list.res, list.mu = list.mu, list.alpha = list.alpha,
-              list.theta = list.theta))
+  return(list(y.imputed=res$y.imputed, param=res$param, mu = mu, alpha = alpha,
+              theta = theta))
 }
 
 
@@ -231,15 +213,13 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
-#' @param wmax maximum weight of quadratic approximation
 #'
 #' @return A list with the following elements
-#' \item{lambda1.grid}{the grid of lambda1 (log scale)}
-#' \item{lambda2.grid}{the grid of lambda2 (log scale)}
-#' \item{list.res}{List of same length as regularization grid with output of mimi for each lambda}
-#' \item{list.mu}{List of same length as regularization grid with offset for each lambda}
-#' \item{list.alpha}{List of same length as regularization grid with value of alpha for each lambda}
-#' \item{list.theta}{List of same length as regularization grid with value of theta for each lambda}
+#' \item{yimputed}{imputed data set}
+#' \item{param}{estimated parameter matrix}
+#' \item{mu}{estimated offset}
+#' \item{alpha}{estimated matrix of group effects}
+#' \item{theta}{estimated interaction matrix}
 #' @export
 #' @importFrom FactoMineR tab.disjonctif.prop
 #' @examples
@@ -252,8 +232,7 @@ mimi.cov <- function(y, x, var.type = c("gaussian", "binary", "categorical", "po
 mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, lambda2, maxit = 100, mu0 = NULL, alpha0 = NULL, theta0 = NULL,
                        thresh = 1e-5, trace.it = F, lambda1.max = NULL, lambda2.max = NULL,
-                       length = 20, offset = T, scale = T, max.rank = 5,
-                       wmax = NULL)
+                       length = 20, offset = T, scale = T, max.rank = 5)
 {
   yy <- y
   n <- nrow(y)
@@ -297,7 +276,6 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   max.rank <- min(max.rank, min(n,p)-1)
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
-  if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
   omega <- !is.na(y)
   if(is.null(lambda2.max)) lambda2.max <- 1e3*lambda2
   ncenters <- aggregate(rep(1, n), list(groups), sum)[,2]
@@ -318,31 +296,18 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
   alpha <- alpha0
   alpha.rep <- matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
   theta <- theta0
-  iter <- 1
-  list.mu <- list()
-  list.alpha <- list()
-  list.theta <- list()
-  list.mu[[1]] <- mu0
-  list.alpha[[1]] <- alpha0
-  list.theta[[1]] <- theta0
-  list.res <- list()
-  list.res[[1]] <- mu0 + alpha.rep + theta0
   for(i in 2:length){
-    res <- rwls_l1_nuc.multi(y, groups = groups, var.type = var.type, nlevel = nlevel,
+    res <- irwls.multi(y, groups = groups, var.type = var.type, nlevel = nlevel,
                              lambda1 = exp(lambda1.grid.log[i]), lambda2 = exp(lambda2.grid.log[i]),
-                             maxit = maxit, mu0 = list.mu[[iter]],
-                             alpha0 = list.alpha[[iter]], theta0 = list.theta[[iter]],
+                             maxit = maxit, mu0 = mu, alpha0 = alpha, theta0 = theta,
                              thresh = thresh, trace.it = trace.it, offset = offset, max.rank = max.rank,
-                             vt2 = vt2, scale = scale, wmax = wmax)
-    iter <- iter + 1
-    list.res[[iter]] <- res
-    list.mu[[iter]] <- res$mu
-    list.alpha[[iter]] <- res$alpha
-    list.theta[[iter]] <- res$theta
+                             vt2 = vt2, scale = scale)
+    mu <- res$mu
+    alpha <- res$alpha
+    theta <- res$theta
   }
-  return(list(lambda1.grid = lambda1.grid.log, lambda2.grid = lambda2.grid.log,
-              list.res = list.res, list.mu = list.mu, list.alpha = list.alpha,
-              list.theta = list.theta))
+  return(list(y.imputed=res$y.imputed, param=res$param, mu = mu, alpha = alpha,
+              theta = theta))
 }
 
 #' mimi.lr
@@ -359,11 +324,9 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 #' @param scale boolean indicating whether or not the column loss functions should be scaled
 #' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
-#' @param wmax maximum weight of quadratic approximation
 #' @return A list with the following elements
-#' \item{lambda1.grid}{the grid of lambda1 (log scale)}
-#' \item{list.res}{List of same length as regularization grid with output of mimi for each lambda}
-#' \item{list.theta}{List of same length as regularization grid with value of theta for each lambda}
+#' \item{yimputed}{the imputed data set}
+#' \item{theta}{estimated low-rank matrix}
 #' @export
 #' @importFrom FactoMineR tab.disjonctif.prop
 #' @examples
@@ -374,7 +337,7 @@ mimi.multi <- function(y, groups, var.type = c("gaussian", "binary", "categorica
 mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
                        lambda1, maxit = 100, theta0 = NULL, thresh = 1e-5,
                        trace.it = F, lambda1.max = NULL, length = 20,
-                       offset = T, scale = T, max.rank = 5, wmax = NULL)
+                       offset = T, scale = T, max.rank = 5)
 {
   yy <- y
   nlevel = rep(1, ncol(y))
@@ -416,26 +379,18 @@ mimi.lr <- function(y, var.type = c("gaussian", "binary", "categorical", "poisso
   max.rank <- min(max.rank, min(n,p)-1)
   y <- as.matrix(y)
   y <- matrix(as.numeric(y), nrow = n)
-  if(is.null(wmax)) wmax = 2*max(y, na.rm = T)
   omega <- !is.na(y)
   if(is.null(lambda1.max)) lambda1.max <- 1e3*lambda1
   lambda1.grid.log <- seq(log(lambda1.max), log(lambda1), length.out = length)
   if(is.null(theta0)) theta0 <- matrix(rep(0, n * p), nrow = n)
   theta <- theta0
-  iter <- 1
-  list.theta <- list()
-  list.theta[[1]] <- theta0
-  list.res <- list()
-  list.res[[1]] <- list(y = y, theta = theta0, objective = 0, y.imputed = apply(y, c(1,2), function(xx){if(is.na(xx)) 0 else xx}))
   for(i in 2:length){
-    res <- rwls_l1_nuc.lr(y, var.type = var.type, nlevel = nlevel, lambda1 = exp(lambda1.grid.log[i]),
-                          maxit = maxit, theta0 = list.theta[[iter]], thresh = thresh,
+    res <- irwls.lr(y, var.type = var.type, nlevel = nlevel, lambda1 = exp(lambda1.grid.log[i]),
+                          maxit = maxit, theta0 = theta, thresh = thresh,
                           trace.it = trace.it, offset = offset, max.rank = max.rank,
-                          vt2 = vt2, scale = scale, wmax = wmax)
-    iter <- iter + 1
-    list.res[[iter]] <- res
-    list.theta[[iter]] <- res$theta
+                          vt2 = vt2, scale = scale)
+    theta <- res$theta
   }
-  return(list(lambda1.grid = lambda1.grid.log, list.res = list.res, list.theta = list.theta))
+  return(list(y.imputed=res$y.imputed, theta=theta))
 }
 

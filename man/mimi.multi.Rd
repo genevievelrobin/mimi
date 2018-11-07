@@ -9,7 +9,7 @@ mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
   "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
   alpha0 = NULL, theta0 = NULL, thresh = 1e-05, trace.it = F,
   lambda1.max = NULL, lambda2.max = NULL, length = 20, offset = T,
-  scale = T, max.rank = 5, wmax = NULL)
+  scale = T, max.rank = 5)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -45,17 +45,14 @@ mimi.multi(y, groups, var.type = c("gaussian", "binary", "categorical",
 \item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix}
-
-\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 A list with the following elements
-\item{lambda1.grid}{the grid of lambda1 (log scale)}
-\item{lambda2.grid}{the grid of lambda2 (log scale)}
-\item{list.res}{List of same length as regularization grid with output of mimi for each lambda}
-\item{list.mu}{List of same length as regularization grid with offset for each lambda}
-\item{list.alpha}{List of same length as regularization grid with value of alpha for each lambda}
-\item{list.theta}{List of same length as regularization grid with value of theta for each lambda}
+\item{yimputed}{imputed data set}
+\item{param}{estimated parameter matrix}
+\item{mu}{estimated offset}
+\item{alpha}{estimated matrix of group effects}
+\item{theta}{estimated interaction matrix}
 }
 \description{
 mimi.multi
