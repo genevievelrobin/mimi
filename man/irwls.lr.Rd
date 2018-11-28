@@ -6,7 +6,7 @@
 \usage{
 irwls.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
   theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F,
-  scale = F, max.rank = 20, vt2 = NULL)
+  scale = F, max.rank = 5, vt2 = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}

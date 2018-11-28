@@ -29,7 +29,7 @@ wls.cov(y, x, lambda1, lambda2, weights = NULL, thresh = 1e-05,
 
 \item{theta0}{matrix of size (nb of ind.)x(number of variables), initial value of the individual effect, default 0}
 
-\item{trace.it}{boolean, if TRUE information about convergence will be displayes, default FALSE}
+\item{trace.it}{boolean, if TRUE information about convergence will be displayed, default FALSE}
 
 \item{offset}{boolean, if TRUE offset is computed, otherwise set to 0, default FALSE}
 

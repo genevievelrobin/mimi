@@ -1,4 +1,5 @@
 
+
 #' covmat
 #'
 #' @param R nxK1 matrix of row covariates
@@ -13,11 +14,11 @@
 #' R <- matrix(rnorm(10), 5)
 #' C <- matrix(rnorm(9), 3)
 #' covs <- covmat(R,C,5,3)
-covmat <- function(R=NULL,C=NULL,n,p){
-  if(is.null(R)) {
-    covs <- covmatC(C,n)
-  } else if(is.null(C)) {
-    covs <- covmatR(R,p)
+covmat <- function(R = NULL, C = NULL, n, p) {
+  if (is.null(R)) {
+    covs <- covmatC(C, n)
+  } else if (is.null(C)) {
+    covs <- covmatR(R, p)
   } else {
     R <- as.matrix(R)
     C <- as.matrix(C)
@@ -25,8 +26,9 @@ covmat <- function(R=NULL,C=NULL,n,p){
     dC <- dim(C)
     K1 <- dR[2]
     K2 <- dC[2]
-    covs <- cbind(do.call(rbind, replicate(nrow(C), R, simplify=FALSE)),
-                  C[rep(seq_len(nrow(C)), each=nrow(R)),])
+    covs <-
+      cbind(do.call(rbind, replicate(nrow(C), R, simplify = FALSE)),
+            C[rep(seq_len(nrow(C)), each = nrow(R)), ])
   }
   return(covs)
 }
@@ -41,12 +43,12 @@ covmat <- function(R=NULL,C=NULL,n,p){
 #' @examples
 #' R <- matrix(rnorm(10), 5)
 #' cov <- covmatR(R,3)
-covmatR <- function(R, p){
+covmatR <- function(R, p) {
   R <- as.matrix(R)
   dR <- dim(R)
   n <- dR[1]
   K1 <- dR[2]
-  covs <- do.call(rbind, replicate(p, R, simplify=FALSE))
+  covs <- do.call(rbind, replicate(p, R, simplify = FALSE))
   return(covs)
 }
 
@@ -61,11 +63,12 @@ covmatR <- function(R, p){
 #' @examples
 #' C <- matrix(rnorm(10), 5)
 #' cov <- covmatC(C,3)
-covmatC <- function(C, n){
+covmatC <- function(C, n) {
   C <- as.matrix(C)
   dC <- dim(C)
   p <- dC[1]
   K2 <- dC[2]
-  covs <- C[rep(seq_len(p), each=n),]
+  covs <- C[rep(seq_len(p), each = n), ]
   return(covs)
 }
+
