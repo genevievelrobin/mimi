@@ -4,9 +4,9 @@
 \alias{irwls.cov}
 \title{irwls.cov}
 \usage{
-irwls.cov(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 100,
-  mu0 = NULL, alpha0 = NULL, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, offset = F, scale = F, max.rank = 5, vt2 = NULL)
+irwls.cov(y, x, var.type, lambda1, lambda2, maxit = 100, alpha0 = NULL,
+  theta0 = NULL, thresh = 1e-05, trace.it = F, max.rank = NULL,
+  nu = 0.01)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -19,11 +19,7 @@ irwls.cov(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 100,
 
 \item{lambda2}{positive number, value of the l1 norm regularization parameter}
 
-\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
-
 \item{maxit}{integer, maximum number of iterations}
-
-\item{mu0}{real number, initial value of the offset, default 0}
 
 \item{alpha0}{matrix of size (nb of groups)x(number of variables), initial value of the group effect, default 0}
 
@@ -33,19 +29,14 @@ irwls.cov(y, x, var.type, lambda1, lambda2, nlevel = NULL, maxit = 100,
 
 \item{trace.it}{boolean, if TRUE information about convergence will be displayes, default FALSE}
 
-\item{offset}{boolean, if TRUE offset is computed, otherwise set to 0, default FALSE}
-
-\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
-
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
 
-\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
+\item{nu}{positive number, backtracking line search parameter, default 0.01}
 }
 \value{
 A list vith the following elements
 \item{y.imputed}{the original data matrix where missing entries are imputed by their estimated means}
 \item{param}{the estimated parameter matrix}
-\item{mu}{the offset}
 \item{alpha}{a (nb groups) x (nb variables) matrix containing the group effects}
 \item{theta}{a (nb individuals) x (nb variables) matrix containing the individual effects}
 }

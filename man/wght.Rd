@@ -4,7 +4,7 @@
 \alias{wght}
 \title{wght}
 \usage{
-wght(y, param, var.type, nlevel = NULL)
+wght(y, param, var.type)
 }
 \arguments{
 \item{y}{real number: observation}
@@ -12,8 +12,6 @@ wght(y, param, var.type, nlevel = NULL)
 \item{param}{real number: current value of parameter}
 
 \item{var.type}{type of variable y (gaussian, binary, poisson)}
-
-\item{nlevel}{vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories)}
 }
 \value{
 weight of the quadratic approximation

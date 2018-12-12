@@ -11,7 +11,11 @@ Imports: glmnet,
 	 softImpute, 
 	 stats,
 	 ade4,
-	 FactoMineR
+	 FactoMineR,
+         parallel,
+	 doParallel,
+	 foreach,
+	 data.table
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.0

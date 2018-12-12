@@ -4,9 +4,8 @@
 \alias{irwls.lr}
 \title{irwls.lr}
 \usage{
-irwls.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
-  theta0 = NULL, thresh = 1e-05, trace.it = F, offset = F,
-  scale = F, max.rank = 5, vt2 = NULL)
+irwls.lr(y, var.type, lambda1, maxit = 100, theta0 = NULL,
+  thresh = 1e-05, trace.it = F, max.rank = NULL, nu = 0.01)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -14,8 +13,6 @@ irwls.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
 \item{var.type}{vector of size p indicating types of columns in y (gaussian, binary, poisson)}
 
 \item{lambda1}{positive number, value of the nuclear norm regularization parameter}
-
-\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
 
 \item{maxit}{integer, maximum number of iterations}
 
@@ -25,13 +22,9 @@ irwls.lr(y, var.type, lambda1, nlevel = NULL, maxit = 100,
 
 \item{trace.it}{boolean, if TRUE information about convergence will be displayes, default FALSE}
 
-\item{offset}{boolean, if TRUE offset is computed, otherwise set to 0, default FALSE}
-
-\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
-
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
 
-\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
+\item{nu}{positive number, backtracking line search parameter, default 0.01}
 }
 \value{
 A list vith the following elements

@@ -4,7 +4,7 @@
 \alias{quad_approx}
 \title{quad_approx}
 \usage{
-quad_approx(y, param, var.type, nlevel, wmax)
+quad_approx(y, param, var.type)
 }
 \arguments{
 \item{y}{observation matrix (nxP) - extended with dummies for cat variables}
@@ -12,10 +12,6 @@ quad_approx(y, param, var.type, nlevel, wmax)
 \item{param}{matrix of parameters (nxP) - extended for cat variables}
 
 \item{var.type}{type of the variables in y (length p<=P) - NOT extended for cat variables}
-
-\item{nlevel}{vector indicating, for every column of y, the number of parameters of the distribution (1 for numerics, K for categorical with K categories) - NOT extended for cat variables}
-
-\item{wmax}{maximum weight of quadratic approximation}
 }
 \value{
 matrix of weights for the quadratic approximation (nxP)

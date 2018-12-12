@@ -10,17 +10,13 @@
 #' @param lambda1 positive number regularization parameter for nuclear norm penalty
 #' @param lambda2 positive number regularization parameter for l1 norm penalty
 #' @param maxit integer maximum number of iterations
-#' @param mu0 real number initial value of offset (optional)
 #' @param alpha0 vector of length N: initial value of regression parameter (optional)
 #' @param theta0 matrix of size nxp: initial value of interactions (optional)
 #' @param thresh positive number, convergence criterion
 #' @param trace.it boolean indicating whether convergence information should be printed
-#' @param scale boolean indicating whether or not the column loss functions should be scaled
-#' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
 #'
 #' @return A list with the following elements
-#' \item{mu}{offset}
 #' \item{alpha}{vector of main effects}
 #' \item{theta}{interaction matrix}
 #' @export
@@ -38,42 +34,20 @@
 #' res <- mimi(y, model = "low-rank", var.type = var.type, lambda1 = 1, maxit=5)
 mimi <-
   function(y,
-           model = c("groups", "covariates", "low-rank"),
+           model = c("covariates", "low-rank"),
            x = NULL,
            groups = NULL,
-           var.type = c("gaussian", "binary", "categorical", "poisson"),
+           var.type = c("gaussian", "binary", "poisson"),
            lambda1,
            lambda2,
            maxit = 100,
-           mu0 = NULL,
            alpha0 = NULL,
            theta0 = NULL,
-           thresh = 1e-6,
+           thresh = 1e-5,
            trace.it = F,
-           offset = T,
-           scale = T,
-           max.rank = 5)
+           max.rank = NULL)
   {
-    if (model == "groups") {
-      return (
-        mimi.multi(
-          y = y,
-          groups = groups,
-          var.type = var.type,
-          lambda1 = lambda1,
-          lambda2 = lambda2,
-          maxit = maxit,
-          mu0 = mu0,
-          alpha0 = alpha0,
-          theta0 = theta0,
-          thresh = thresh,
-          trace.it = trace.it,
-          offset = offset,
-          scale = scale,
-          max.rank = max.rank
-        )
-      )
-    } else if (model == "covariates") {
+    if (model == "covariates") {
       return(
         mimi.cov(
           y = y,
@@ -82,13 +56,10 @@ mimi <-
           lambda1 = lambda1,
           lambda2 = lambda2,
           maxit = maxit,
-          mu0 = mu0,
           alpha0 = alpha0,
           theta0 = theta0,
           thresh = thresh,
           trace.it = trace.it,
-          offset = offset,
-          scale = scale,
           max.rank = max.rank
         )
       )
@@ -102,8 +73,6 @@ mimi <-
           theta0 = theta0,
           thresh = thresh,
           trace.it = trace.it,
-          offset = offset,
-          scale = scale,
           max.rank = max.rank
         )
       )
@@ -121,19 +90,15 @@ mimi <-
 #' @param lambda1 positive number regularization parameter for nuclear norm penalty
 #' @param lambda2 positive number regularization parameter for l1 norm penalty
 #' @param maxit integer maximum number of iterations
-#' @param mu0 real number initial value of offset (optional)
 #' @param alpha0 vector of length N: initial value of regression parameter (optional)
 #' @param theta0 matrix of size nxp: initial value of interactions (optional)
 #' @param thresh positive number, convergence criterion
 #' @param trace.it boolean indicating whether convergence information should be printed
-#' @param scale boolean indicating whether or not the column loss functions should be scaled
-#' @param offset boolean indicating whether or not an offset should be fitted
 #' @param max.rank integer, maximum rank of interaction matrix theta
 #'
 #' @return A list with the following elements
 #' \item{yimputed}{imputed data set}
 #' \item{param}{estimated parameter matrix}
-#' \item{mu}{estimated offset}
 #' \item{alpha}{estimated vector of main effects}
 #' \item{theta}{estimated interaction matrix}
 #' @export
@@ -153,88 +118,38 @@ mimi <-
 mimi.cov <-
   function(y,
            x,
-           var.type = c("gaussian", "binary", "categorical", "poisson"),
+           var.type = c("gaussian", "binary", "poisson"),
            lambda1,
            lambda2,
            maxit = 100,
-           mu0 = NULL,
            alpha0 = NULL,
            theta0 = NULL,
-           thresh = 1e-4,
+           thresh = 1e-5,
            trace.it = F,
-           offset = T,
-           scale = F,
-           max.rank = 5)
+           max.rank = NULL)
   {
     yy <- y
-    nlevel = rep(1, ncol(y))
     n <- nrow(y)
     if (sum(var.type == "binary") > 0) {
       for (j in 1:sum(var.type == "binary")) {
         y <- data.frame(y)
         y[, which(var.type == "binary")[j]] <-
           as.factor(y[, which(var.type == "binary")[j]])
-        y[, which(var.type == "binary")[j]] <-
-          sapply(as.character(y[, which(var.type == "binary")[j]]), function(t)
-            if (t %in% c(levels(y[, which(var.type == "binary")[j]])[1]))
-              1
-            else if (is.na(t))
-              NA
-            else
-              0)
       }
     }
-    if (sum(var.type == "categorical") > 0) {
-      y <- data.frame(y)
-      for (j in 1:sum(var.type == "categorical")) {
-        y[, which(var.type == "categorical")[j]] <-
-          as.factor(y[, which(var.type == "categorical")[j]])
-      }
-      tab <- tab.disjonctif.prop(y[, var.type == "categorical"])
-      nlevel[var.type == "categorical"] <-
-        sapply(which(var.type == "categorical"), function(t)
-          nlevels(y[, t]))
-      colnames(tab) <-
-        paste(rep(colnames(y[, var.type == "categorical"]), nlevel[var.type == "categorical"])
-              , ".", c(sapply(nlevel[var.type == "categorical"], function(k)
-                1:k)), sep = "")
-      y2 <- rep(0, n)
-      x2 <- rep(0, ncol(x))
-      vt2 <- NULL
-      count <- 1
-      for (j in 1:ncol(y)) {
-        if (!(var.type[j] == "categorical")) {
-          y2 <- cbind(y2, y[j])
-          vt2 <- c(vt2, var.type[j])
-          x2 <- rbind(x2, x[(1 + j - 1):(j + n - 1),])
-        } else{
-          y2 <- cbind(y2, tab[, count:(count + nlevels(y[, j]) - 1)])
-          vt2 <- c(vt2, rep("categorical", nlevels(y[, j])))
-          for (i in 1:nlevels(y[, j])) {
-            x2 <- rbind(x2, x[(1 + j - 1):(j + n - 1),])
-          }
-        }
-      }
-      x <- x2[2:nrow(x2),]
-      y <- y2[, 2:ncol(y2)]
-    } else
-      vt2 <- var.type
     y <- as.matrix(y)
     d <- dim(y)
     n <- d[1]
     p <- d[2]
-    max.rank <- min(max.rank, min(n, p) - 1)
+    if(is.null(max.rank)) max.rank <- min(n,p)-1 else max.rank <- min(max.rank, min(n, p)-1)
     y <- as.matrix(y)
     y <- matrix(as.numeric(y), nrow = n)
     omega <- !is.na(y)
     q <- ncol(x)
-    if (is.null(mu0))
-      mu0 <- 0
     if (is.null(alpha0))
       alpha0 <- rep(0, q)
     if (is.null(theta0))
       theta0 <- matrix(rep(0, n * p), nrow = n)
-    mu <- mu0
     alpha <- alpha0
     alpha.mat <-
       matrix(matrix(as.numeric(x), nrow = n * p) %*% alpha, nrow = n)
@@ -243,188 +158,25 @@ mimi.cov <-
       y,
       x,
       var.type = var.type,
-      nlevel = nlevel,
       lambda1 = lambda1,
       lambda2 = lambda2,
       maxit = maxit,
-      mu0 = mu,
       alpha0 = alpha,
       theta0 = theta,
       thresh = thresh,
-      trace.it = trace.it,
-      offset = offset,
-      scale = scale,
-      vt2 = vt2
+      trace.it = trace.it
     )
-    mu <- res$mu
     alpha <- res$alpha
     theta <- res$theta
 
     return(list(
       y.imputed = res$y.imputed,
       param = res$param,
-      mu = mu,
       alpha = alpha,
       theta = theta
     ))
   }
 
-
-#' mimi.multi
-#' Compute solution of mimi with group effects along regularization path
-#' @param y nxp observation matrix
-#' @param groups factor of length n indicating group memberships
-#' @param var.type vector of length p indicating types of y columns (gaussian, binary, poisson)
-#' @param lambda1 positive number, regularization parameter for nuclear norm penalty
-#' @param lambda2 positive number, regularization parameter for l1 norm penalty
-#' @param maxit integer, maximum number of iterations
-#' @param mu0 real number initial offset (optional)
-#' @param alpha0 matrix of size Nxp (N nb of groups) initial group effects (optional)
-#' @param theta0 matrix of size nxp, initial interactions (optional)
-#' @param thresh positive number, convergence criterion
-#' @param trace.it boolean, whether convergence information should be printed
-#' @param scale boolean indicating whether or not the column loss functions should be scaled
-#' @param offset boolean, whether or not an offset should be fitted, default FALSE
-#' @param max.rank integer, maximum rank of interaction matrix
-#'
-#' @return A list with the following elements
-#' \item{yimputed}{imputed data set}
-#' \item{param}{estimated parameter matrix}
-#' \item{mu}{estimated offset}
-#' \item{alpha}{estimated matrix of group effects}
-#' \item{theta}{estimated interaction matrix}
-#' @export
-#' @importFrom FactoMineR tab.disjonctif.prop
-#' @examples
-#' param <- matrix(rnorm(6 * 10), nrow = 6)
-#' groups <- c(1,1,2,2,3,3)
-#' groups <- as.factor(groups)
-#' param[groups==1, 1] <- 2
-#' param[groups==2, 2] <- 2
-#' y <- matrix(rnorm(6*10,c(param)), nrow=6)
-#' var.type <- rep("gaussian", 10)
-#' res <- mimi.multi(y, groups, var.type, lambda1 = 1, lambda2 = 2, thresh=0.1)
-mimi.multi <-
-  function(y,
-           groups,
-           var.type = c("gaussian", "binary", "categorical", "poisson"),
-           lambda1,
-           lambda2,
-           maxit = 100,
-           mu0 = NULL,
-           alpha0 = NULL,
-           theta0 = NULL,
-           thresh = 1e-5,
-           trace.it = F,
-           offset = T,
-           scale = T,
-           max.rank = 5)
-  {
-    yy <- y
-    n <- nrow(y)
-    nlevel = rep(1, ncol(y))
-    if (sum(var.type == "binary") > 0) {
-      for (j in 1:sum(var.type == "binary")) {
-        y <- data.frame(y)
-        y[, which(var.type == "binary")[j]] <-
-          as.factor(y[, which(var.type == "binary")[j]])
-        y[, which(var.type == "binary")[j]] <-
-          sapply(as.character(y[, which(var.type == "binary")[j]]), function(t)
-            if (t %in% c(levels(y[, which(var.type == "binary")[j]])[1]))
-              1
-            else if (is.na(t))
-              NA
-            else
-              0)
-      }
-    }
-    if (sum(var.type == "categorical") > 0) {
-      y <- data.frame(y)
-      for (j in 1:sum(var.type == "categorical")) {
-        y[, which(var.type == "categorical")[j]] <-
-          as.factor(y[, which(var.type == "categorical")[j]])
-      }
-      tab <- tab.disjonctif.prop(y[, var.type == "categorical"])
-      tab[((tab < 1) * (tab > 0)) == 1] <- NA
-      nlevel[var.type == "categorical"] <-
-        sapply(which(var.type == "categorical"), function(t)
-          nlevels(y[, t]))
-      colnames(tab) <-
-        paste(rep(colnames(y[, var.type == "categorical"]), nlevel[var.type == "categorical"])
-              , ".", c(sapply(nlevel[var.type == "categorical"], function(k)
-                1:k)), sep = "")
-      vt2 <- NULL
-      y2 <- rep(0, n)
-      count <- 1
-      for (j in 1:ncol(y)) {
-        if (!(var.type[j] == "categorical")) {
-          y2 <- cbind(y2, y[j])
-          vt2 <- c(vt2, var.type[j])
-        } else{
-          y2 <- cbind(y2, tab[, count:(count + nlevels(y[, j]) - 1)])
-          vt2 <- c(vt2, rep("categorical", nlevels(y[, j])))
-          count <- count + nlevels(y[, j])
-        }
-      }
-      y <- y2[, 2:ncol(y2)]
-    } else
-      vt2 <- var.type
-    d <- dim(y)
-    n <- d[1]
-    p <- d[2]
-    max.rank <- min(max.rank, min(n, p) - 1)
-    y <- as.matrix(y)
-    y <- matrix(as.numeric(y), nrow = n)
-    omega <- !is.na(y)
-    ncenters <- aggregate(rep(1, n), list(groups), sum)[, 2]
-    N <- nlevels(groups)
-    if (is.null(mu0))
-      mu0 <- 0
-    if (is.null(alpha0)) {
-      alpha.rep <- matrix(rep(0, n * p), nrow = n)
-      alpha0 <- matrix(rep(0, N * p), nrow = N)
-    } else{
-      alpha.rep <-
-        matrix(rep(as.matrix(alpha0), rep(ncenters, p)), nrow = n)
-      alpha <- matrix(as.matrix(alpha0), nrow = N)
-    }
-    if (is.null(theta0))
-      theta0 <- matrix(rep(0, n * p), nrow = n)
-    mu <- mu0
-    alpha <- alpha0
-    alpha.rep <-
-      matrix(rep(as.matrix(alpha), rep(ncenters, p)), nrow = n)
-    theta <- theta0
-    res <-
-      irwls.multi(
-        y,
-        groups = groups,
-        var.type = var.type,
-        nlevel = nlevel,
-        lambda1 = lambda1,
-        lambda2 = lambda2,
-        maxit = maxit,
-        mu0 = mu,
-        alpha0 = alpha,
-        theta0 = theta,
-        thresh = thresh,
-        trace.it = trace.it,
-        offset = offset,
-        max.rank = max.rank,
-        vt2 = vt2,
-        scale = scale
-      )
-    mu <- res$mu
-    alpha <- res$alpha
-    theta <- res$theta
-    return(list(
-      y.imputed = res$y.imputed,
-      param = res$param,
-      mu = mu,
-      alpha = alpha,
-      theta = theta
-    ))
-  }
 
 #' mimi.lr
 #' Compute solution of mimi for low-rank model along regularization path
@@ -435,8 +187,6 @@ mimi.multi <-
 #' @param theta0 matrix of size nxp, initial interactions (optional)
 #' @param thresh positive number, convergence criterion
 #' @param trace.it boolean, whether convergence information should be printed
-#' @param scale boolean indicating whether or not the column loss functions should be scaled
-#' @param offset boolean, whether or not an offset should be fitted, default FALSE
 #' @param max.rank integer, maximum rank of interaction matrix
 #' @return A list with the following elements
 #' \item{yimputed}{the imputed data set}
@@ -450,68 +200,27 @@ mimi.multi <-
 #' res <- mimi.lr(y0, var.type, lambda1 = 0.1)
 mimi.lr <-
   function(y,
-           var.type = c("gaussian", "binary", "categorical", "poisson"),
+           var.type = c("gaussian", "binary"),
            lambda1,
            maxit = 100,
            theta0 = NULL,
            thresh = 1e-5,
            trace.it = F,
-           offset = T,
-           scale = T,
-           max.rank = 5)
+           max.rank = NULL)
   {
     yy <- y
-    nlevel = rep(1, ncol(y))
     if (sum(var.type == "binary") > 0) {
       for (j in 1:sum(var.type == "binary")) {
         y <- data.frame(y)
         y[, which(var.type == "binary")[j]] <-
           as.factor(y[, which(var.type == "binary")[j]])
-        y[, which(var.type == "binary")[j]] <-
-          sapply(as.character(y[, which(var.type == "binary")[j]]), function(t)
-            if (t %in% c(levels(y[, which(var.type == "binary")[j]])[1]))
-              1
-            else if (is.na(t))
-              NA
-            else
-              0)
       }
     }
-    if (sum(var.type == "categorical") > 0) {
-      y <- data.frame(y)
-      for (j in 1:sum(var.type == "categorical")) {
-        y[, which(var.type == "categorical")[j]] <-
-          as.factor(y[, which(var.type == "categorical")[j]])
-      }
-      tab <- tab.disjonctif.prop(y[, var.type == "categorical"])
-      tab[((tab > 0) * (tab < 1) == 1)] <- NA
-      nlevel[var.type == "categorical"] <-
-        sapply(which(var.type == "categorical"), function(t)
-          nlevels(y[, t]))
-      colnames(tab) <-
-        paste(rep(colnames(y[, var.type == "categorical"]), nlevel[var.type == "categorical"])
-              , ".", c(sapply(nlevel[var.type == "categorical"], function(k)
-                1:k)), sep = "")
-      y2 <- rep(0, n)
-      vt2 <- NULL
-      count <- 1
-      for (j in 1:ncol(y)) {
-        if (!(var.type[j] == "categorical")) {
-          y2 <- cbind(y2, y[j])
-          vt2 <- c(vt2, var.type[j])
-        } else{
-          y2 <- cbind(y2, tab[, count:(count + nlevels(y[, j]) - 1)])
-          vt2 <- c(vt2, rep("categorical", nlevels(y[, j])))
-        }
-      }
-      y <- y2[, 2:ncol(y2)]
-    } else
-      vt2 <- var.type
     y <- as.matrix(y)
     d <- dim(y)
     n <- d[1]
     p <- d[2]
-    max.rank <- min(max.rank, min(n, p) - 1)
+    if(is.null(max.rank)) max.rank <- min(n,p)-1 else max.rank <- min(max.rank, min(n,p)-1)
     y <- as.matrix(y)
     y <- matrix(as.numeric(y), nrow = n)
     omega <- !is.na(y)
@@ -522,18 +231,173 @@ mimi.lr <-
       irwls.lr(
         y,
         var.type = var.type,
-        nlevel = nlevel,
         lambda1 = lambda1,
         maxit = maxit,
         theta0 = theta,
         thresh = thresh,
         trace.it = trace.it,
-        offset = offset,
-        max.rank = max.rank,
-        vt2 = vt2,
-        scale = scale
+        max.rank = max.rank
       )
-    theta <- res$theta
-
-    return(list(y.imputed = res$y.imputed, theta = theta))
+    return(list(y.imputed = res$y.imputed, theta = res$theta))
   }
+
+
+#' cv.mimi
+#'
+#' @param y [matrix, data.frame] incomplete and mixed data frame (nxp)
+#' @param model either one of "groups", "covariates" or "low-rank", indicating which model should be fitted
+#' @param var.type vector of length p indicating types of y columns (gaussian, binary, poisson)
+#' @param x [matrix, data.frame] covariate matrix (npxq)
+#' @param N [integer] number of cross-validation folds
+#' @param thresh [positive number] convergence threshold, default is 1e-5
+#' @param maxit [integer] maximum number of iterations, default is 100
+#' @param max.rank [integer] maximum rank of interaction matrix, default is 2
+#' @param trace.it [boolean] whether information about convergence should be printed
+#' @param parallel [boolean] whether the N-fold cross-validation should be parallelized, default value is TRUE
+#' @param len [integer] the size of the grid
+#'
+#' @return A list with the following elements
+#' \item{lambda1}{regularization parameter estimated by cross-validation for nuclear norm penalty (interaction matrix)}
+#' \item{lambda2}{regularization parameter estimated by cross-validation for l1 norm penalty (main effects)}
+#' \item{errors}{a table containing the prediction errors for all pairs of parameters}
+
+#' @export
+#' @import data.table doParallel parallel foreach
+cv.mimi <- function(y,
+                    model=c("low-rank", "covariates"),
+                    var.type,
+                    x = NULL,
+                    N = 10,
+                    thresh = 1e-5,
+                    maxit = 100,
+                    max.rank = NULL,
+                    trace.it = F,
+                    parallel = T,
+                    len = 20) {
+  y <- as.matrix(y)
+  Y2 <- y
+  Y2[is.na(Y2)] <- 0
+  d <- dim(y)
+  n <- d[1]
+  p <- d[2]
+  if(is.null(max.rank)) max.rank <- min(n,p)-1 else max.rank <- min(max.rank, min(n, p)-1)
+  m <- sum(!is.na(y))
+  na_func <- function(x, prob = 0.1) {
+    x <- as.matrix(x)
+    omega <- !is.na(x)
+    obs.idx <- which(omega)
+    yp <- x
+    yp[sample(obs.idx, round(prob * sum(omega)))] <- NA
+    return(yp)
+  }
+  lambda1.max <- max(svd(Y2)$d)
+  lambda1.min <- 1e-3*lambda1.max
+  grid.lambda1 <-
+    exp(seq(log(lambda1.min), log(lambda1.max), length.out = len))
+  if(model=="covariates"){
+    lambda2.max <-
+      max(y, na.rm=T)
+    lambda2.min <- 1e-3 * lambda2.max
+    grid.lambda2 <-
+      exp(seq(log(lambda2.min), log(lambda2.max), length.out = len))
+    grid <- as.matrix(data.table::CJ(grid.lambda1, grid.lambda2))
+    grid <- grid[nrow(grid):1,]
+    if (parallel) {
+      nbco <- detectCores()
+      cl <- makeCluster(nbco)
+      registerDoParallel(cl)
+      res.cv <-
+        foreach(k = 1:N,
+                .packages = c("mimi", "parallel", "glmnet")) %dopar% {
+                  sapply(1:nrow(grid),
+                         function(i) {
+                           yy <- na_func(as.matrix(y), prob = 0.1)
+                           if (trace.it)
+                             print(paste("lambda", i))
+                           res <-
+                             mimi(as.matrix(yy),
+                                  model="covariates",
+                                  var.type=var.type,
+                                  x=x,
+                                  lambda1 = grid[i, 1],
+                                  lambda2 = grid[i, 2])$y.imputed
+
+                           return(sqrt(sum((res - y) ^ 2, na.rm = T)))
+                         })
+                }
+    } else{
+      ylist <-
+        lapply(1:N, function(k)
+          na_func(as.matrix(y), prob = 0.1))
+      res.cv <-   lapply(1:N, function(k) {
+        if (trace.it)
+          print(paste("boot", k))
+        sapply(1:nrow(grid),
+               function(i) {
+                 if (trace.it)
+                   print(paste("lambda", i))
+                 res <-
+                   mimi(ylist[[k]], model="covariates", var.type=var.type, x=x, lambda1 = grid[i, 1], lambda2 = grid[i, 2])$y.imputed
+                 return(sqrt(sum((res - y) ^ 2, na.rm = T)))
+               })
+      })
+    }
+    res.cv <- colMeans(do.call(rbind, res.cv))
+    l <- which.min(res.cv)
+    lambda <- grid[l, ]
+    names(lambda) <- c("lambda1","lambda2")
+    dat <-
+      data.frame(errors = res.cv,
+                 lambda1 = grid[, 1],
+                 lambda2 = grid[, 2])
+  } else{
+    if (parallel) {
+      nbco <- detectCores()
+      cl <- makeCluster(nbco)
+      registerDoParallel(cl)
+      res.cv <-
+        foreach(k = 1:N,
+                .packages = c("mimi", "parallel", "glmnet")) %dopar% {
+                  sapply(1:len,
+                         function(i) {
+                           yy <- na_func(as.matrix(y), prob = 0.1)
+                           if (trace.it)
+                             print(paste("lambda", i))
+                           res <-
+                             mimi(as.matrix(yy),
+                                  model="low-rank", var.type=var.type,
+                                  lambda1 = grid.lambda1[i])$y.imputed
+                           return(sqrt(sum((res - y) ^ 2, na.rm = T)))
+                         })
+                }
+    } else{
+      ylist <-
+        lapply(1:N, function(k)
+          na_func(as.matrix(y), prob = 0.1))
+      res.cv <-   lapply(1:N, function(k) {
+        if (trace.it)
+          print(paste("boot", k))
+        sapply(1:len,
+               function(i) {
+                 if (trace.it)
+                   print(paste("lambda", i))
+                 res <-
+                   mimi(ylist[[k]], model="low-rank", var.type=var.type, lambda1 = grid.lambda1[i])$y.imputed
+                 return(sqrt(sum((res - y) ^ 2, na.rm = T)))
+               })
+      })
+    }
+    res.cv <- colMeans(do.call(rbind, res.cv))
+    l <- which.min(res.cv)
+    lambda <- grid.lambda1[l]
+    dat <-
+      data.frame(errors = res.cv,
+                 lambda1 = grid.lambda1)
+
+  }
+
+  return(list(
+    lambda = lambda,
+    errors = dat
+  ))
+}

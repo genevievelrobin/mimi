@@ -6,7 +6,7 @@
 Performs Armijo backtracking line search along a pre-specified search direction}
 \usage{
 armijo.lr(y0, theta, theta.tmp, w, z, b = 0.5, lambda1, var.type,
-  thresh = 1e-05, nlevel, vt2)
+  thresh = 1e-05, nu = 0.01, zeta = 0.5, th = 0.5)
 }
 \arguments{
 \item{y0}{nxp observations matrix}
@@ -14,6 +14,10 @@ armijo.lr(y0, theta, theta.tmp, w, z, b = 0.5, lambda1, var.type,
 \item{theta}{nxp matrix direction of update for matrix of interactions}
 
 \item{theta.tmp}{nxp matrix, current matrix of interactions}
+
+\item{w}{weights of the quadratic approximation}
+
+\item{z}{matrix around which the quadratic approximation is done}
 
 \item{b}{positive number in (0,1) factor by which the step size is reduced}
 
@@ -23,9 +27,11 @@ armijo.lr(y0, theta, theta.tmp, w, z, b = 0.5, lambda1, var.type,
 
 \item{thresh}{positive number, convergence criterion}
 
-\item{nlevel}{vector of integers indicating the number of levels of each factor in y}
+\item{nu}{positive number, backtracking line search parameter, default 0.01}
 
-\item{vt2}{vector indicating types of the columns of the extended data frame y (with dummies for every category)}
+\item{zeta}{positive number, backtracking line search parameter, default 0.1}
+
+\item{th}{positive number, backtracking line search parameter, default 0.1}
 }
 \value{
 A list with the following elements

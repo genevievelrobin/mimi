@@ -5,10 +5,9 @@
 \title{mimi.cov
 Compute solution of mimi with covariates effects along regularization path}
 \usage{
-mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
-  "poisson"), lambda1, lambda2, maxit = 100, mu0 = NULL,
-  alpha0 = NULL, theta0 = NULL, thresh = 1e-04, trace.it = F,
-  offset = T, scale = F, max.rank = 5)
+mimi.cov(y, x, var.type = c("gaussian", "binary", "poisson"), lambda1,
+  lambda2, maxit = 100, alpha0 = NULL, theta0 = NULL,
+  thresh = 1e-05, trace.it = F, max.rank = NULL)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -23,8 +22,6 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
 
 \item{maxit}{integer maximum number of iterations}
 
-\item{mu0}{real number initial value of offset (optional)}
-
 \item{alpha0}{vector of length N: initial value of regression parameter (optional)}
 
 \item{theta0}{matrix of size nxp: initial value of interactions (optional)}
@@ -33,17 +30,12 @@ mimi.cov(y, x, var.type = c("gaussian", "binary", "categorical",
 
 \item{trace.it}{boolean indicating whether convergence information should be printed}
 
-\item{offset}{boolean indicating whether or not an offset should be fitted}
-
-\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
-
 \item{max.rank}{integer, maximum rank of interaction matrix theta}
 }
 \value{
 A list with the following elements
 \item{yimputed}{imputed data set}
 \item{param}{estimated parameter matrix}
-\item{mu}{estimated offset}
 \item{alpha}{estimated vector of main effects}
 \item{theta}{estimated interaction matrix}
 }

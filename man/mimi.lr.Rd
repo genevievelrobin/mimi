@@ -5,9 +5,9 @@
 \title{mimi.lr
 Compute solution of mimi for low-rank model along regularization path}
 \usage{
-mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
-  lambda1, maxit = 100, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, offset = T, scale = T, max.rank = 5)
+mimi.lr(y, var.type = c("gaussian", "binary", "poisson"), lambda1,
+  maxit = 100, theta0 = NULL, thresh = 1e-05, trace.it = F,
+  max.rank = NULL)
 }
 \arguments{
 \item{y}{nxp observation matrix}
@@ -23,10 +23,6 @@ mimi.lr(y, var.type = c("gaussian", "binary", "categorical", "poisson"),
 \item{thresh}{positive number, convergence criterion}
 
 \item{trace.it}{boolean, whether convergence information should be printed}
-
-\item{offset}{boolean, whether or not an offset should be fitted, default FALSE}
-
-\item{scale}{boolean indicating whether or not the column loss functions should be scaled}
 
 \item{max.rank}{integer, maximum rank of interaction matrix}
 }
