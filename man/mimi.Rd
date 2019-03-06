@@ -2,15 +2,14 @@
 % Please edit documentation in R/mimi.R
 \name{mimi}
 \alias{mimi}
-\title{mimi (Main effects and Interactions in Mixed and Incomplete data frames)
-The method estimates main effects (group effects or effects of covariates)
-and interactions in mixed data frames with missing values. The results can be used
-for imputation or interpretation purposes.}
+\title{main function: low-rank models to analyze and impute mixed and incomplete data frames
+with numeric, binary and discrete variables, and missing values}
 \usage{
-mimi(y, model = c("covariates", "low-rank"), x = NULL, groups = NULL,
-  var.type = c("gaussian", "binary", "poisson"), lambda1, lambda2,
-  maxit = 100, alpha0 = NULL, theta0 = NULL, thresh = 1e-05,
-  trace.it = F, max.rank = NULL)
+mimi(y, model = c("low-rank", "multilevel", "covariates"), x = NULL,
+  groups = NULL, var.type = c("gaussian", "binomial", "poisson"),
+  lambda1, lambda2, algo = c("mcgd", "bcgd"), maxit = 100,
+  alpha0 = NULL, theta0 = NULL, thresh = 1e-05, trace.it = F,
+  max.rank = NULL)
 }
 \arguments{
 \item{y}{nxp matrix of observations}
@@ -21,11 +20,13 @@ mimi(y, model = c("covariates", "low-rank"), x = NULL, groups = NULL,
 
 \item{groups}{factor of length n indicating groups (optional)}
 
-\item{var.type}{vector of length p indicating the data types of the columns of y (gaussian, binary or poisson)}
+\item{var.type}{vector of length p indicating the data types of the columns of y (gaussian, binomial or poisson)}
 
 \item{lambda1}{positive number regularization parameter for nuclear norm penalty}
 
 \item{lambda2}{positive number regularization parameter for l1 norm penalty}
+
+\item{algo}{type of algorithm to use, either one of "bcgd" (small dimensions, gaussian and binomial variables) or "mcgd" (large dimensions, poisson variables)}
 
 \item{maxit}{integer maximum number of iterations}
 
@@ -45,10 +46,8 @@ A list with the following elements
 \item{theta}{interaction matrix}
 }
 \description{
-mimi (Main effects and Interactions in Mixed and Incomplete data frames)
-The method estimates main effects (group effects or effects of covariates)
-and interactions in mixed data frames with missing values. The results can be used
-for imputation or interpretation purposes.
+main function: low-rank models to analyze and impute mixed and incomplete data frames
+with numeric, binary and discrete variables, and missing values
 }
 \examples{
 n = 6; p = 2
@@ -58,7 +57,7 @@ y3 <- matrix(rnorm(mean = 2, n * p), nrow = n)
 y <- cbind(matrix(rnorm(mean = c(y1), n * p), nrow = n),
            matrix(rbinom(n * p, prob = c(exp(y2)/(1+exp(y2))), size = 1), nrow = n),
            matrix(rpois(n * p, lambda = c(exp(y3))), nrow = n))
-var.type <- c(rep("gaussian", p), rep("binary", p), rep("poisson", p))
+var.type <- c(rep("gaussian", p), rep("binomial", p), rep("poisson", p))
 idx_NA <- sample(1:(3 * n * p), size = round(0.01 * 3 * n * p))
 y[idx_NA] <- NA
 res <- mimi(y, model = "low-rank", var.type = var.type, lambda1 = 1, maxit=5)

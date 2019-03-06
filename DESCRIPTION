@@ -1,24 +1,23 @@
 Package: mimi
 Type: Package
 Title: Main Effects and Interactions in Mixed and Incomplete Data
-Version: 0.1.0
+Version: 0.2.0
 Author: Geneviève Robin
 Maintainer: Genevieve Robin <genevieve.robin@polytechnique.edu>
-Description: Estimation of main effects and interactions in mixed data sets with missing values. 
+Description: Generalized low-rank models for mixed and incomplete data frames. The main function may be used for dimensionality reduction of imputation of numeric, binary and count data (simultaneously). Main effects such as column means, group effects, or effects of row-column side information (e.g. user/item attributes in recommendation system) may also be modelled in addition to the low-rank model. Geneviève Robin, Olga Klopp, Julie Josse, Éric Moulines, Robert Tibshirani (2018) <arXiv:1806.09734>.
 Depends: R (>= 2.10)
 License: GPL-3
 Imports: glmnet,
 	 softImpute, 
 	 stats,
-	 ade4,
 	 FactoMineR,
          parallel,
 	 doParallel,
 	 foreach,
-	 data.table
+	 data.table,
+	 rARPACK
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.0
 Suggests: knitr,
     	  rmarkdown
-VignetteBuilder: knitr
